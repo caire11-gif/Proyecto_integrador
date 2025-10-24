@@ -1,0 +1,163 @@
+ /* ==== Reset básico ==== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+    }
+
+    body {
+      background: #f5f6fa;
+      color: #333;
+    }
+
+    main.stock-main {
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    /* ==== Filtros ==== */
+    .filtros-stock {
+      background: #fff;
+      padding: 15px 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .filtro-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .input-busqueda, .select-filtro {
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border 0.2s ease;
+    }
+
+    .input-busqueda:focus, .select-filtro:focus {
+      border-color: #007bff;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .btn-info {
+      background: #007bff;
+      color: #fff;
+    }
+    .btn-info:hover {
+      background: #0056b3;
+    }
+
+    .btn-secondary {
+      background: #e4e6eb;
+      color: #333;
+    }
+    .btn-secondary.active {
+      background: #007bff;
+      color: #fff;
+    }
+
+    /* ==== Tabla ==== */
+    .table-container {
+      background: #fff;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      overflow-x: auto;
+    }
+
+    .stock-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .stock-table th {
+      background: #007bff;
+      color: #fff;
+      padding: 12px 10px;
+      text-align: left;
+    }
+
+    .stock-table td {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .stock-table tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    .stock-table tr:hover {
+      background: #eef4ff;
+    }
+
+    /* ==== Vista Tarjetas ==== */
+    .vista-tarjetas {
+      margin-top: 20px;
+    }
+
+    .tarjetas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .tarjeta {
+      background: #fff;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.2s;
+    }
+
+    .tarjeta:hover {
+      transform: translateY(-4px);
+    }
+
+    .tarjeta h3 {
+      font-size: 16px;
+      color: #007bff;
+      margin-bottom: 6px;
+    }
+
+    .tarjeta p {
+      font-size: 14px;
+      margin: 2px 0;
+    }
+
+    /* ==== Controles Vista ==== */
+    .controles-vista {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .filtro-group {
+        grid-template-columns: 1fr;
+      }
+
+      .controles-vista {
+        flex-direction: column;
+      }
+    }
+ 

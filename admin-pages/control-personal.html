@@ -1,0 +1,373 @@
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0"><i class="fas fa-users me-2"></i>Control de Personal</h1>
+        <div>
+            <button class="btn btn-mad" data-bs-toggle="modal" data-bs-target="#modalEmpleado">
+                <i class="fas fa-plus me-2"></i>Nuevo Empleado
+            </button>
+            <div class="text-muted d-inline-block ms-3">Mes: Diciembre 2024</div>
+        </div>
+    </div>
+
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-primary mb-1">8</h3>
+                    <small class="text-muted">Empleados Activos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-success mb-1">156</h3>
+                    <small class="text-muted">Horas Trabajadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-warning mb-1">12.5</h3>
+                    <small class="text-muted">Horas Extras</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-info mb-1">6</h3>
+                    <small class="text-muted">Usuarios Sistema</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Empleado</th>
+                            <th>Cargo</th>
+                            <th>Días Trabajados</th>
+                            <th>Horas Totales</th>
+                            <th>Horas Extras</th>
+                            <th>Ausencias</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="fw-bold">María Alvarez</div>
+                                <small class="text-muted">DNI: 71234567</small>
+                            </td>
+                            <td>Encargado Almacén</td>
+                            <td>22</td>
+                            <td>176</td>
+                            <td>8.5</td>
+                            <td>0</td>
+                            <td><span class="badge bg-success">Activo</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" title="Crear Usuario" onclick="crearUsuario(1)">
+                                    <i class="fas fa-user-plus"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="fw-bold">Carlos Rodríguez</div>
+                                <small class="text-muted">DNI: 72345678</small>
+                            </td>
+                            <td>Vendedor</td>
+                            <td>20</td>
+                            <td>160</td>
+                            <td>4.0</td>
+                            <td>2</td>
+                            <td><span class="badge bg-success">Activo</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" title="Crear Usuario" onclick="crearUsuario(2)">
+                                    <i class="fas fa-user-plus"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="fw-bold">Ana Torres</div>
+                                <small class="text-muted">DNI: 73456789</small>
+                            </td>
+                            <td>Vendedor</td>
+                            <td>18</td>
+                            <td>144</td>
+                            <td>0</td>
+                            <td>4</td>
+                            <td><span class="badge bg-warning">Licencia</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                    <i class="fas fa-user-plus"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="fw-bold">Luis García</div>
+                                <small class="text-muted">DNI: 74567890</small>
+                            </td>
+                            <td>Cajero</td>
+                            <td>21</td>
+                            <td>168</td>
+                            <td>0</td>
+                            <td>1</td>
+                            <td><span class="badge bg-success">Activo</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" title="Crear Usuario" onclick="crearUsuario(4)">
+                                    <i class="fas fa-user-plus"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>Usuarios del Sistema</h5>
+                    <span class="badge bg-mad">6 activos</span>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">admin</div>
+                                <small class="text-muted">Admin Principal - Rol: Administrador</small>
+                            </div>
+                            <div>
+                                <span class="badge bg-success me-2">Activo</span>
+                                <button class="btn btn-sm btn-outline-danger" onclick="toggleUsuario(1, false)">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">maria.alvarez</div>
+                                <small class="text-muted">María Alvarez - Rol: Encargado Almacén</small>
+                            </div>
+                            <div>
+                                <span class="badge bg-success me-2">Activo</span>
+                                <button class="btn btn-sm btn-outline-danger" onclick="toggleUsuario(2, false)">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">carlos.rodriguez</div>
+                                <small class="text-muted">Carlos Rodríguez - Rol: Vendedor</small>
+                            </div>
+                            <div>
+                                <span class="badge bg-success me-2">Activo</span>
+                                <button class="btn btn-sm btn-outline-danger" onclick="toggleUsuario(3, false)">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Registro Diario - Hoy</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">María Alvarez</div>
+                                <small class="text-muted">Entrada: 08:00 - Salida: 17:30</small>
+                            </div>
+                            <span class="badge bg-success">9.5 horas</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">Carlos Rodríguez</div>
+                                <small class="text-muted">Entrada: 09:00 - Salida: 18:00</small>
+                            </div>
+                            <span class="badge bg-success">9.0 horas</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">Luis García</div>
+                                <small class="text-muted">Entrada: 10:00 - Salida: 19:00</small>
+                            </div>
+                            <span class="badge bg-success">9.0 horas</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalEmpleado" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Nuevo Empleado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEmpleado">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Apellido</label>
+                            <input type="text" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">DNI</label>
+                            <input type="number" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha Nacimiento</label>
+                        <input type="date" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cargo</label>
+                        <select class="form-select" required>
+                            <option value="">Seleccionar cargo...</option>
+                            <option value="vendedor">Vendedor</option>
+                            <option value="almacen">Encargado de Almacén</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-mad" onclick="guardarEmpleado()">
+                    <i class="fas fa-save me-2"></i>Guardar Empleado
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Crear Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formUsuario">
+                    <div class="mb-3">
+                        <label class="form-label">Empleado</label>
+                        <input type="text" class="form-control" id="empleadoSeleccionado" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nombre de Usuario</label>
+                        <input type="text" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contraseña Temporal</label>
+                        <input type="password" class="form-control" value="madmarket2024" required>
+                        <div class="form-text">La contraseña puede ser cambiada después del primer login</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rol del Sistema</label>
+                        <select class="form-select" required>
+                            <option value="">Seleccionar rol...</option>
+                            <option value="3">Vendedor</option>
+                            <option value="2">Encargado de Almacén</option>
+                            <option value="1">Administrador</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-mad" onclick="guardarUsuario()">
+                    <i class="fas fa-save me-2"></i>Crear Usuario
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function initPage() {
+        console.log('Control personal con gestión de usuarios inicializado');
+    }
+
+    function crearUsuario(empleadoId) {
+        // Aquí buscaríamos los datos del empleado por ID
+        const empleados = {
+            1: "María Alvarez",
+            2: "Carlos Rodríguez", 
+            4: "Luis García"
+        };
+        const empleadoNombre = empleados[empleadoId] || "Empleado";
+        document.getElementById('empleadoSeleccionado').value = empleadoNombre;
+        
+        const modalUsuario = new bootstrap.Modal(document.getElementById('modalUsuario'));
+        modalUsuario.show();
+    }
+
+    function guardarEmpleado() {
+        // Lógica para guardar en tabla 'empleado'
+        showNotification('Empleado creado exitosamente', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEmpleado'));
+        modal.hide();
+    }
+
+    function guardarUsuario() {
+        // Lógica para guardar en tabla 'usuario'
+        showNotification('Usuario creado exitosamente', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalUsuario'));
+        modal.hide();
+    }
+
+    function toggleUsuario(usuarioId, activar) {
+        const accion = activar ? 'activado' : 'desactivado';
+        showNotification(`Usuario ${accion} correctamente`, 'success');
+    }
+</script>

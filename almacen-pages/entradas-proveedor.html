@@ -1,0 +1,679 @@
+
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --light-bg: #f8f9fa;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            padding: 15px 20px;
+        }
+        
+        .nav-tabs {
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+            padding: 12px 20px;
+            transition: all 0.3s;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            border: none;
+            color: var(--primary-color);
+        }
+        
+        .nav-tabs .nav-link.active {
+            background-color: transparent;
+            border: none;
+            border-bottom: 3px solid var(--secondary-color);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .btn-mad {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .btn-mad:hover {
+            background-color: #2980b9;
+            color: white;
+        }
+        
+        .table th {
+            background-color: var(--light-bg);
+            font-weight: 600;
+        }
+        
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .total-row {
+            background-color: #e8f4fd !important;
+            font-weight: bold;
+        }
+        
+        .product-row {
+            transition: background-color 0.2s;
+        }
+        
+        .product-row:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .action-btn {
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        
+        .search-box input {
+            padding-left: 35px;
+        }
+        
+        .filter-dropdown {
+            min-width: 200px;
+        }
+        
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+            
+            .btn-sm {
+                padding: 5px 8px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="mb-1"><i class="fas fa-truck-loading me-2"></i>Entradas de Proveedor</h4>
+                <p class="text-muted mb-0">Registra nuevas entradas de productos al almacén</p>
+            </div>
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <span class="badge bg-success">Hoy: 19/12/2024</span>
+                </div>
+                <button class="btn btn-outline-primary">
+                    <i class="fas fa-file-export me-1"></i>Exportar
+                </button>
+            </div>
+        </div>
+
+        
+        <ul class="nav nav-tabs mb-4" id="entradasTabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#nuevaEntrada">
+                    <i class="fas fa-plus-circle me-1"></i>Nueva Entrada
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#historialEntradas">
+                    <i class="fas fa-history me-1"></i>Historial
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            
+            <div class="tab-pane fade show active" id="nuevaEntrada">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Registrar Nueva Entrada</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="formEntrada">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Proveedor <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="proveedorSelect" required>
+                                        <option value="">Seleccionar proveedor...</option>
+                                        <option value="coca">Coca Cola Perú</option>
+                                        <option value="nestle">Nestlé Perú</option>
+                                        <option value="unilever">Unilever</option>
+                                        <option value="primor">Primor</option>
+                                        <option value="backus">Backus</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Fecha de Entrada <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="fechaEntrada" value="2024-12-19" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">N° Factura/Comprobante (Opcional)</label>
+                                    <input type="text" class="form-control" id="numeroFactura" placeholder="Ej: F001-1245">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tipo de Comprobante</label>
+                                    <select class="form-select" id="tipoComprobante">
+                                        <option value="factura">Factura</option>
+                                        <option value="boleta">Boleta</option>
+                                        <option value="guia">Guía de Remisión</option>
+                                        <option value="otro">Otro</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            
+                            <div class="mt-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0"><i class="fas fa-boxes me-2"></i>Productos de la Entrada</h6>
+                                    <span class="badge bg-primary" id="contadorProductos">1 producto(s)</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th width="35%">Producto</th>
+                                                <th width="15%">Cantidad (Cajas)</th>
+                                                <th width="15%">Precio Unitario (S/)</th>
+                                                <th width="15%">Total (S/)</th>
+                                                <th width="10%">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="detallesEntrada">
+                                            <tr class="product-row">
+                                                <td>
+                                                    <select class="form-select product-select">
+                                                        <option value="">Seleccionar producto...</option>
+                                                        <option value="coca500">Coca Cola 500ml</option>
+                                                        <option value="oreo">Galletas Oreo</option>
+                                                        <option value="aceite">Aceite Primor 1L</option>
+                                                        <option value="incakola">Inca Kola 500ml</option>
+                                                        <option value="leche">Leche Gloria 1L</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control cantidad-input" value="10" min="1">
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control precio-input" value="2.50" step="0.01" min="0">
+                                                </td>
+                                                <td class="total-producto">S/ 25.00</td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-danger action-btn" onclick="eliminarFila(this)">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="5" class="text-end">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="agregarFila()">
+                                                        <i class="fas fa-plus me-1"></i>Agregar Producto
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr class="table-active total-row">
+                                                <td colspan="3" class="text-end"><strong>Total General:</strong></td>
+                                                <td colspan="2"><strong id="totalGeneral">S/ 25.00</strong></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="form-label">Observaciones</label>
+                                <textarea class="form-control" id="observaciones" rows="2" placeholder="Notas adicionales sobre esta entrada..."></textarea>
+                            </div>
+
+                            <div class="mt-4 text-end">
+                                <button type="reset" class="btn btn-secondary me-2" onclick="resetForm()">Cancelar</button>
+                                <button type="submit" class="btn btn-mad">
+                                    <i class="fas fa-save me-1"></i>Registrar Entrada
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="tab-pane fade" id="historialEntradas">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Historial de Entradas</h5>
+                            <div class="d-flex">
+                                <div class="search-box me-2">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" class="form-control" placeholder="Buscar..." id="buscarHistorial">
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-filter me-1"></i>Filtrar
+                                    </button>
+                                    <ul class="dropdown-menu filter-dropdown" aria-labelledby="filterDropdown">
+                                        <li><a class="dropdown-item" href="#" onclick="filtrarHistorial('todos')">Todos</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="filtrarHistorial('hoy')">Hoy</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="filtrarHistorial('semana')">Esta semana</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="filtrarHistorial('mes')">Este mes</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" onclick="filtrarHistorial('coca')">Coca Cola</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="filtrarHistorial('nestle')">Nestlé</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="filtrarHistorial('unilever')">Unilever</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="tablaHistorial">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Fecha</th>
+                                        <th>Proveedor</th>
+                                        <th>Productos</th>
+                                        <th>Cantidad</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                        <th>Registrado por</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>ENT-0012</td>
+                                        <td>15/12/2024</td>
+                                        <td>Coca Cola Perú</td>
+                                        <td>Coca Cola 500ml</td>
+                                        <td>10 cajas</td>
+                                        <td>S/ 250.00</td>
+                                        <td><span class="status-badge status-completed">Completado</span></td>
+                                        <td>María Alvarez</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary action-btn" title="Ver detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success action-btn" title="Descargar PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>ENT-0011</td>
+                                        <td>14/12/2024</td>
+                                        <td>Nestlé Perú</td>
+                                        <td>Galletas Oreo, Leche Gloria</td>
+                                        <td>15 cajas</td>
+                                        <td>S/ 320.00</td>
+                                        <td><span class="status-badge status-completed">Completado</span></td>
+                                        <td>María Alvarez</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary action-btn" title="Ver detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success action-btn" title="Descargar PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>ENT-0010</td>
+                                        <td>12/12/2024</td>
+                                        <td>Unilever</td>
+                                        <td>Jabón Lux, Shampoo Sedal</td>
+                                        <td>8 cajas</td>
+                                        <td>S/ 180.50</td>
+                                        <td><span class="status-badge status-completed">Completado</span></td>
+                                        <td>Carlos Mendoza</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary action-btn" title="Ver detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success action-btn" title="Descargar PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>ENT-0009</td>
+                                        <td>10/12/2024</td>
+                                        <td>Primor</td>
+                                        <td>Aceite Primor 1L</td>
+                                        <td>20 cajas</td>
+                                        <td>S/ 420.00</td>
+                                        <td><span class="status-badge status-completed">Completado</span></td>
+                                        <td>María Alvarez</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary action-btn" title="Ver detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success action-btn" title="Descargar PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                Mostrando <strong>4</strong> de <strong>12</strong> entradas
+                            </div>
+                            <nav>
+                                <ul class="pagination mb-0">
+                                    <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+                                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Inicializar la página
+        function initPage() {
+            console.log('Sistema de Entradas de Proveedor cargado');
+            
+            // Calcular total automático
+            document.querySelectorAll('.cantidad-input, .precio-input').forEach(input => {
+                input.addEventListener('input', calcularTotal);
+            });
+            
+            // Inicializar el cálculo del total
+            calcularTotal();
+            
+            // Configurar el formulario
+            document.getElementById('formEntrada').addEventListener('submit', function(e) {
+                e.preventDefault();
+                registrarEntrada();
+            });
+            
+            // Configurar búsqueda en el historial
+            document.getElementById('buscarHistorial').addEventListener('input', buscarEnHistorial);
+        }
+        
+        // Calcular total de productos y total general
+        function calcularTotal() {
+            let totalGeneral = 0;
+            let contadorProductos = 0;
+            
+            document.querySelectorAll('#detallesEntrada tr').forEach(row => {
+                const cantidad = parseFloat(row.querySelector('.cantidad-input').value) || 0;
+                const precio = parseFloat(row.querySelector('.precio-input').value) || 0;
+                const totalProducto = cantidad * precio;
+                
+                // Actualizar el total del producto
+                row.querySelector('.total-producto').textContent = `S/ ${totalProducto.toFixed(2)}`;
+                
+                totalGeneral += totalProducto;
+                contadorProductos++;
+            });
+            
+            // Actualizar el total general
+            document.getElementById('totalGeneral').textContent = `S/ ${totalGeneral.toFixed(2)}`;
+            
+            // Actualizar el contador de productos
+            document.getElementById('contadorProductos').textContent = `${contadorProductos} producto(s)`;
+        }
+        
+        // Agregar una nueva fila de producto
+        function agregarFila() {
+            const tbody = document.getElementById('detallesEntrada');
+            const newRow = document.createElement('tr');
+            newRow.className = 'product-row';
+            
+            newRow.innerHTML = `
+                <td>
+                    <select class="form-select product-select">
+                        <option value="">Seleccionar producto...</option>
+                        <option value="coca500">Coca Cola 500ml</option>
+                        <option value="oreo">Galletas Oreo</option>
+                        <option value="aceite">Aceite Primor 1L</option>
+                        <option value="incakola">Inca Kola 500ml</option>
+                        <option value="leche">Leche Gloria 1L</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="form-control cantidad-input" value="1" min="1">
+                </td>
+                <td>
+                    <input type="number" class="form-control precio-input" value="0.00" step="0.01" min="0">
+                </td>
+                <td class="total-producto">S/ 0.00</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-danger action-btn" onclick="eliminarFila(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(newRow);
+            
+            // Agregar event listeners a los nuevos inputs
+            newRow.querySelectorAll('.cantidad-input, .precio-input').forEach(input => {
+                input.addEventListener('input', calcularTotal);
+            });
+            
+            // Recalcular total
+            calcularTotal();
+        }
+        
+        // Eliminar una fila de producto
+        function eliminarFila(button) {
+            const row = button.closest('tr');
+            row.remove();
+            calcularTotal();
+        }
+        
+        // Resetear el formulario
+        function resetForm() {
+            const tbody = document.getElementById('detallesEntrada');
+            
+            // Mantener solo una fila
+            while (tbody.children.length > 1) {
+                tbody.removeChild(tbody.lastChild);
+            }
+            
+            // Resetear valores de la primera fila
+            const firstRow = tbody.children[0];
+            firstRow.querySelector('.product-select').value = '';
+            firstRow.querySelector('.cantidad-input').value = '1';
+            firstRow.querySelector('.precio-input').value = '0.00';
+            
+            // Recalcular total
+            calcularTotal();
+        }
+        
+        // Registrar una nueva entrada
+        function registrarEntrada() {
+            // Validaciones básicas
+            const proveedor = document.getElementById('proveedorSelect').value;
+            const fecha = document.getElementById('fechaEntrada').value;
+            
+            if (!proveedor || !fecha) {
+                alert('Por favor, complete los campos obligatorios.');
+                return;
+            }
+            
+            // Verificar que al menos un producto tenga cantidad y precio
+            let productosValidos = false;
+            document.querySelectorAll('#detallesEntrada tr').forEach(row => {
+                const producto = row.querySelector('.product-select').value;
+                const cantidad = row.querySelector('.cantidad-input').value;
+                const precio = row.querySelector('.precio-input').value;
+                
+                if (producto && cantidad > 0 && precio > 0) {
+                    productosValidos = true;
+                }
+            });
+            
+            if (!productosValidos) {
+                alert('Por favor, agregue al menos un producto con cantidad y precio válidos.');
+                return;
+            }
+            
+            // Simular envío del formulario
+            alert('Entrada registrada exitosamente.');
+            
+            // Resetear formulario después del registro
+            resetForm();
+            document.getElementById('formEntrada').reset();
+        }
+        
+        // Buscar en el historial
+        function buscarEnHistorial() {
+            const searchTerm = document.getElementById('buscarHistorial').value.toLowerCase();
+            const rows = document.querySelectorAll('#tablaHistorial tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        // Filtrar historial
+        function filtrarHistorial(filtro) {
+            const rows = document.querySelectorAll('#tablaHistorial tbody tr');
+            
+            rows.forEach(row => {
+                const proveedor = row.cells[2].textContent.toLowerCase();
+                const fecha = row.cells[1].textContent;
+                
+                let mostrar = false;
+                
+                switch(filtro) {
+                    case 'todos':
+                        mostrar = true;
+                        break;
+                    case 'hoy':
+                        mostrar = fecha === '19/12/2024'; // Fecha de hoy
+                        break;
+                    case 'semana':
+                        // Lógica simplificada para mostrar entradas de esta semana
+                        mostrar = ['15/12/2024', '14/12/2024', '12/12/2024', '10/12/2024'].includes(fecha);
+                        break;
+                    case 'mes':
+                        // Lógica simplificada para mostrar entradas de este mes
+                        mostrar = true; // Todas en el ejemplo son de diciembre
+                        break;
+                    case 'coca':
+                        mostrar = proveedor.includes('coca');
+                        break;
+                    case 'nestle':
+                        mostrar = proveedor.includes('nestlé');
+                        break;
+                    case 'unilever':
+                        mostrar = proveedor.includes('unilever');
+                        break;
+                    default:
+                        mostrar = true;
+                }
+                
+                row.style.display = mostrar ? '' : 'none';
+            });
+            
+            // Actualizar el dropdown del filtro
+            document.getElementById('filterDropdown').textContent = `Filtro: ${obtenerTextoFiltro(filtro)}`;
+        }
+        
+        // Obtener texto del filtro para mostrar
+        function obtenerTextoFiltro(filtro) {
+            const textos = {
+                'todos': 'Todos',
+                'hoy': 'Hoy',
+                'semana': 'Esta semana',
+                'mes': 'Este mes',
+                'coca': 'Coca Cola',
+                'nestle': 'Nestlé',
+                'unilever': 'Unilever'
+            };
+            
+            return textos[filtro] || 'Filtrar';
+        }
+        
+        // Inicializar la página cuando se carga
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+/* ===== SOLICITUDES REPOSICIÓN AMPLIADO ===== */
+.solicitudes-main {
+  background: var(--card-bg, #fff);
+  border-radius: 14px;
+  padding: 30px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  border: 1px solid var(--border, #ddd);
+  max-width: 1200px;
+  margin: 40px auto;
+  font-size: 16px;
+}
+
+/* Pestañas */
+.tabs {
+  display: flex;
+  gap: 12px;
+  border-bottom: 3px solid var(--border, #eee);
+  padding-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  padding: 14px 22px;
+  border-radius: 10px 10px 0 0;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-light, #666);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+  color: var(--primary, #007bff);
+  background: rgba(52, 152, 219, 0.15);
+  font-size: 17px;
+}
+
+.tab-btn:hover:not(.active) {
+  color: var(--text-dark, #333);
+  background: rgba(0,0,0,0.06);
+}
+
+/* Contenido */
+.tab-content {
+  min-height: 500px;
+  margin-top: 20px;
+}
+
+.tab-pane {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+/* Alertas */
+.alertas-automaticas h3 {
+  color: var(--primary, #007bff);
+  margin-bottom: 20px;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.alerta-auto {
+  background: linear-gradient(135deg, #fff9e6, #fff3cd);
+  border: 2px solid var(--warning, #f39c12);
+  border-left: 6px solid var(--warning, #f39c12);
+  border-radius: 10px;
+  padding: 18px 22px;
+  font-size: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alerta-auto.critica {
+  background: linear-gradient(135deg, #ffe6e6, #ffcdcd);
+  border-color: var(--danger, #e74c3c);
+  border-left-color: var(--danger, #e74c3c);
+  animation: pulse 2s infinite;
+}
+
+/* Solicitud Manual */
+.solicitud-manual h3 {
+  color: var(--primary, #007bff);
+  margin-bottom: 20px;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.form-solicitud {
+  max-width: 700px;
+  margin: 0 auto;
+  font-size: 15px;
+}
+
+.form-solicitud .form-group {
+  margin-bottom: 22px;
+}
+
+.form-solicitud select,
+.form-solicitud input,
+.form-solicitud textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--border, #ddd);
+  border-radius: 10px;
+  background: #f8f9fa;
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+.form-solicitud select:focus,
+.form-solicitud input:focus,
+.form-solicitud textarea:focus {
+  border-color: var(--secondary, #3498db);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+}
+
+.info-cantidad {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-light, #666);
+}
+
+/* Historial */
+.historial-solicitudes h3 {
+  color: var(--primary, #007bff);
+  margin-bottom: 20px;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.solicitud-item {
+  background: #fff;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 10px;
+  padding: 20px;
+  font-size: 15px;
+  transition: all 0.2s;
+}
+
+.solicitud-item:hover {
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {opacity: 0; transform: translateY(10px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+@keyframes pulse {
+  0%,100% {box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4);}
+  50% {box-shadow: 0 0 0 10px rgba(231, 76, 60, 0);}
+}
+

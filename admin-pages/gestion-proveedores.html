@@ -1,0 +1,287 @@
+<div class="container-fluid">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="fas fa-truck me-2"></i>Gestión de Proveedores</h4>
+            <p class="text-muted mb-0">Administra los proveedores del sistema</p>
+        </div>
+        <button class="btn btn-mad" data-bs-toggle="modal" data-bs-target="#modalProveedor">
+            <i class="fas fa-plus me-2"></i>Nuevo Proveedor
+        </button>
+    </div>
+
+    
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-building fa-2x text-primary mb-2"></i>
+                    <h4>8</h4>
+                    <p class="mb-0">Proveedores Activos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-truck-loading fa-2x text-success mb-2"></i>
+                    <h4>23</h4>
+                    <p class="mb-0">Entradas Este Mes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-boxes fa-2x text-warning mb-2"></i>
+                    <h4>45</h4>
+                    <p class="mb-0">Productos Asociados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-bell fa-2x text-danger mb-2"></i>
+                    <h4>3</h4>
+                    <p class="mb-0">Pedidos Pendientes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Lista de Proveedores</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Proveedor</th>
+                            <th>Contacto</th>
+                            <th>Productos</th>
+                            <th>Última Entrega</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>Coca Cola Perú</strong>
+                                    <br><small class="text-muted">Bebidas y refrescos</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <i class="fas fa-phone me-1"></i> 987 654 321
+                                    <br><i class="fas fa-map-marker me-1"></i> Av. Principal 123
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">12 productos</span>
+                            </td>
+                            <td>15/12/2024</td>
+                            <td><span class="badge bg-success">Activo</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info" title="Ver Productos">
+                                        <i class="fas fa-boxes"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>Nestlé Perú</strong>
+                                    <br><small class="text-muted">Alimentos y galletas</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <i class="fas fa-phone me-1"></i> 987 123 456
+                                    <br><i class="fas fa-map-marker me-1"></i> Calle Comercio 456
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">8 productos</span>
+                            </td>
+                            <td>14/12/2024</td>
+                            <td><span class="badge bg-success">Activo</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info" title="Ver Productos">
+                                        <i class="fas fa-boxes"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>Unilever</strong>
+                                    <br><small class="text-muted">Aceites y limpieza</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <i class="fas fa-phone me-1"></i> 987 789 123
+                                    <br><i class="fas fa-map-marker me-1"></i> Jr. Industrial 789
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">6 productos</span>
+                            </td>
+                            <td>12/12/2024</td>
+                            <td><span class="badge bg-warning">Inactivo</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info" title="Ver Productos">
+                                        <i class="fas fa-boxes"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Productos por Proveedor</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Coca Cola Perú</h6>
+                                    <div class="mt-2">
+                                        <span class="badge bg-light text-dark me-1 mb-1">Coca Cola 500ml</span>
+                                        <span class="badge bg-light text-dark me-1 mb-1">Sprite 500ml</span>
+                                        <span class="badge bg-light text-dark me-1 mb-1">Fanta 500ml</span>
+                                        <span class="badge bg-light text-dark me-1 mb-1">Agua San Luis</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Nestlé Perú</h6>
+                                    <div class="mt-2">
+                                        <span class="badge bg-light text-dark me-1 mb-1">Galletas Oreo</span>
+                                        <span class="badge bg-light text-dark me-1 mb-1">Leche Gloria</span>
+                                        <span class="badge bg-light text-dark me-1 mb-1">Nescafé</span>
+                                        <span class="badge bg-light text-dark me-1 mb-1">Maggi</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Unilever</h6>
+                                    <div class="mt-2">
+                                        <span class="badge bg-light text-dark me-1 mb-1">Aceite Primor</span>
+                                        <span class="badge bg-light text-dark me-1 mb-1">Detergente OMO</span>
+                                        <span class="badge bg-light text-dark me-1 mb-1">Jabón Lux</span>
+                                        <span class="badge bg-light text-dark me-1 mb-1">Shampoo Sedal</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalProveedor" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Nuevo Proveedor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Nombre del Proveedor</label>
+                            <input type="text" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" rows="2" placeholder="Tipo de productos que ofrece..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Dirección</label>
+                            <textarea class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select">
+                                <option value="activo">Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-mad">Guardar Proveedor</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function initPage() {
+    console.log('Gestión de proveedores cargada');
+    
+    // Aquí podrías cargar datos de proveedores via AJAX
+    setTimeout(() => {
+        showNotification('Lista de proveedores actualizada', 'success');
+    }, 800);
+}
+</script>

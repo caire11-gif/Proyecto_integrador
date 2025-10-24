@@ -1,0 +1,149 @@
+<div class="container-fluid reportes-page"> 
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="fas fa-chart-bar me-2"></i>Reportes de Entradas y Traslados</h4>
+            <p class="text-muted mb-0">Análisis completo de Entradas y Salidas</p>
+        </div>
+        <div> <button id="btnExportar" class="btn btn-outline-primary me-2"> 
+            <i class="fas fa-file-export me-2"></i>Exportar </button> <button id="btnImprimir" class="btn btn-mad">
+                <i class="fas fa-print me-2"></i>Imprimir </button> </div>
+    </div> 
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3"> <label class="form-label">Fecha Inicio</label> <input type="date"
+                        class="form-control" value="2024-12-01"> </div>
+                <div class="col-md-3"> <label class="form-label">Fecha Fin</label> <input type="date"
+                        class="form-control" value="2024-12-19"> </div>
+                <div class="col-md-3"> <label class="form-label">Producto</label> <select class="form-select">
+                        <option value="">Todos los productos</option>
+                        <option value="coca500">Coca Cola 500ml</option>
+                        <option value="oreo">Galletas Oreo</option>
+                    </select> </div>
+                <div class="col-md-3 d-flex align-items-end"> <button id="btnFiltrar" class="btn btn-mad w-100"> <i
+                            class="fas fa-filter me-2"></i>Filtrar </button> </div>
+            </div>
+        </div>
+    </div> 
+    <ul class="nav nav-tabs mb-4" id="reportesTabs">
+        <li class="nav-item"> <a class="nav-link active" data-bs-toggle="tab" href="#Reportes"> Reportes
+            </a> </li>
+        <li class="nav-item"> <a class="nav-link" data-bs-toggle="tab" href="#productosVendidos">Productos Más
+                Vendidos</a> </li>
+    </ul>
+    <div class="tab-content"> 
+        <div class="tab-pane fade show active" id="Reportes">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>Reportes de Entradas y Traslados - Diciembre 2024</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Producto</th>
+                                    <th>Movimiento</th>
+                                    <th>Entrada</th>
+                                    <th>Salida</th>
+                                    <th>Stock Actual</th>
+                                    <th>Usuario</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>19/12/2024</td>
+                                    <td>Coca Cola 500ml</td>
+                                    <td><span class="badge bg-success">Entrada Proveedor</span></td>
+                                    <td>10 cajas</td>
+                                    <td>-</td>
+                                    <td>12 cajas</td>
+                                    <td>María Alvarez</td>
+                                </tr>
+                                <tr>
+                                    <td>18/12/2024</td>
+                                    <td>Galletas Oreo</td>
+                                    <td><span class="badge bg-primary">Traslado Tienda</span></td>
+                                    <td>-</td>
+                                    <td>3 cajas</td>
+                                    <td>8 cajas</td>
+                                    <td>María Alvarez</td>
+                                </tr>
+                                <tr>
+                                    <td>18/12/2024</td>
+                                    <td>Coca Cola 500ml</td>
+                                    <td><span class="badge bg-info">Venta</span></td>
+                                    <td>-</td>
+                                    <td>24 unidades</td>
+                                    <td>48 unidades</td>
+                                    <td>Carlos Ruiz</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="tab-pane fade" id="productosVendidos">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Productos Más Vendidos - Diciembre 2024</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Unidades Vendidas</th>
+                                    <th>Ingresos Totales</th>
+                                    <th>Tendencia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td><strong>Coca Cola 500ml</strong></td>
+                                    <td>Bebidas</td>
+                                    <td>240 unidades</td>
+                                    <td>S/ 912.00</td>
+                                    <td><i class="fas fa-arrow-up text-success"></i> +15%</td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td><strong>Galletas Oreo</strong></td>
+                                    <td>Galletas</td>
+                                    <td>180 unidades</td>
+                                    <td>S/ 450.00</td>
+                                    <td><i class="fas fa-arrow-up text-success"></i> +8%</td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td><strong>Aceite Primor 1L</strong></td>
+                                    <td>Abarrotes</td>
+                                    <td>45 unidades</td>
+                                    <td>S/ 540.00</td>
+                                    <td><i class="fas fa-arrow-down text-danger"></i> -5%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+       
+<script>
+    function initPage() {
+        console.log('Reportes kardex cargada');
+
+        // Simular generación de reporte
+        document.querySelector('.btn-mad').addEventListener('click', function () {
+            showNotification('Reporte generado correctamente', 'success');
+        });
+    }
+</script>

@@ -1,0 +1,437 @@
+<div class="container-fluid">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0"><i class="fas fa-cash-register me-2"></i>Registro de Ventas</h1>
+        <div>
+            <button class="btn btn-mad" data-bs-toggle="modal" data-bs-target="#modalNuevaVenta">
+                <i class="fas fa-plus me-2"></i>Nueva Venta
+            </button>
+        </div>
+    </div>
+
+    
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Vendedor</label>
+                    <select class="form-select" id="filtroVendedor">
+                        <option value="">Todos los vendedores</option>
+                        <option value="1">Carlos Rodríguez</option>
+                        <option value="2">Ana Torres</option>
+                        <option value="3">Luis García</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Inicio</label>
+                    <input type="date" class="form-control" id="filtroFechaInicio">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Fin</label>
+                    <input type="date" class="form-control" id="filtroFechaFin">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Estado</label>
+                    <select class="form-select" id="filtroEstado">
+                        <option value="">Todos</option>
+                        <option value="completada">Completada</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="cancelada">Cancelada</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button class="btn btn-outline-mad" onclick="aplicarFiltros()">
+                        <i class="fas fa-filter me-2"></i>Aplicar Filtros
+                    </button>
+                    <button class="btn btn-outline-secondary ms-2" onclick="limpiarFiltros()">
+                        <i class="fas fa-eraser me-2"></i>Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-primary mb-1" id="totalVentas">24</h3>
+                    <small class="text-muted">Total Ventas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-success mb-1" id="montoTotal">S/ 8,450.00</h3>
+                    <small class="text-muted">Monto Total</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-info mb-1" id="promedioVenta">S/ 352.08</h3>
+                    <small class="text-muted">Promedio por Venta</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-warning mb-1" id="productosVendidos">156</h3>
+                    <small class="text-muted">Productos Vendidos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Historial de Ventas</h5>
+            <div class="text-muted">
+                Mostrando <span id="ventasMostradas">8</span> de <span id="ventasTotales">24</span> ventas
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th># Venta</th>
+                            <th>Fecha</th>
+                            <th>Vendedor</th>
+                            <th>Cliente</th>
+                            <th>Productos</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="fw-bold">#V-00124</td>
+                            <td>15/12/2024<br><small class="text-muted">10:30 AM</small></td>
+                            <td>
+                                <div class="fw-bold">Carlos Rodríguez</div>
+                                <small class="text-muted">Vendedor</small>
+                            </td>
+                            <td>
+                                <div class="fw-bold">Juan Pérez</div>
+                                <small class="text-muted">DNI: 87654321</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark">3 productos</span>
+                            </td>
+                            <td class="fw-bold text-success">S/ 450.00</td>
+                            <td><span class="badge bg-success">Completada</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="verDetalleVenta(124)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info ms-1" onclick="imprimirTicket(124)">
+                                    <i class="fas fa-receipt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">#V-00123</td>
+                            <td>15/12/2024<br><small class="text-muted">09:15 AM</small></td>
+                            <td>
+                                <div class="fw-bold">Ana Torres</div>
+                                <small class="text-muted">Vendedor</small>
+                            </td>
+                            <td>
+                                <div class="fw-bold">María López</div>
+                                <small class="text-muted">DNI: 76543210</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark">5 productos</span>
+                            </td>
+                            <td class="fw-bold text-success">S/ 680.00</td>
+                            <td><span class="badge bg-success">Completada</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="verDetalleVenta(123)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info ms-1" onclick="imprimirTicket(123)">
+                                    <i class="fas fa-receipt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">#V-00121</td>
+                            <td>14/12/2024<br><small class="text-muted">02:45 PM</small></td>
+                            <td>
+                                <div class="fw-bold">Carlos Rodríguez</div>
+                                <small class="text-muted">Vendedor</small>
+                            </td>
+                            <td>
+                                <div class="fw-bold">Roberto Silva</div>
+                                <small class="text-muted">DNI: 65432109</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark">8 productos</span>
+                            </td>
+                            <td class="fw-bold text-success">S/ 1,250.00</td>
+                            <td><span class="badge bg-success">Completada</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="verDetalleVenta(121)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info ms-1" onclick="imprimirTicket(121)">
+                                    <i class="fas fa-receipt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#">Anterior</a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">Siguiente</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalNuevaVenta" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-cash-register me-2"></i>Nueva Venta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNuevaVenta">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Vendedor</label>
+                            <select class="form-select" required>
+                                <option value="">Seleccionar vendedor...</option>
+                                <option value="1">Carlos Rodríguez</option>
+                                <option value="2">Ana Torres</option>
+                                <option value="3">Luis García</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cliente</label>
+                            <select class="form-select" required>
+                                <option value="final">Consumidor Final</option>
+                                <option value="1">Juan Pérez - 87654321</option>
+                                <option value="2">María López - 76543210</option>
+                                <option value="3">Roberto Silva - 65432109</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Agregar Productos</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Buscar producto por código o nombre...">
+                            <button class="btn btn-outline-mad" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Precio</th>
+                                    <th>Cantidad</th>
+                                    <th>Subtotal</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Arroz Costeño 5kg</td>
+                                    <td>S/ 18.00</td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm" value="2" min="1" style="width: 80px;">
+                                    </td>
+                                    <td>S/ 36.00</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Método de Pago</label>
+                                <select class="form-select">
+                                    <option value="efectivo">Efectivo</option>
+                                    <option value="tarjeta">Tarjeta</option>
+                                    <option value="yape">Yape</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Subtotal:</span>
+                                        <span>S/ 36.00</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>IGV (18%):</span>
+                                        <span>S/ 6.48</span>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between fw-bold">
+                                        <span>Total:</span>
+                                        <span class="text-success">S/ 42.48</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-mad" onclick="procesarVenta()">
+                    <i class="fas fa-check me-2"></i>Procesar Venta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalDetalleVenta" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalle de Venta #<span id="numeroVentaDetalle"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contenidoDetalleVenta">
+                
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-mad" onclick="imprimirTicket()">
+                    <i class="fas fa-print me-2"></i>Imprimir Ticket
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function initPage() {
+        console.log('Página de ventas inicializada');
+    }
+
+    function aplicarFiltros() {
+        const vendedor = document.getElementById('filtroVendedor').value;
+        const fechaInicio = document.getElementById('filtroFechaInicio').value;
+        const fechaFin = document.getElementById('filtroFechaFin').value;
+        const estado = document.getElementById('filtroEstado').value;
+
+        console.log('Aplicando filtros:', { vendedor, fechaInicio, fechaFin, estado });
+        showNotification('Filtros aplicados correctamente', 'success');
+    }
+
+    function limpiarFiltros() {
+        document.getElementById('filtroVendedor').value = '';
+        document.getElementById('filtroFechaInicio').value = '';
+        document.getElementById('filtroFechaFin').value = '';
+        document.getElementById('filtroEstado').value = '';
+        showNotification('Filtros limpiados', 'info');
+    }
+
+    function verDetalleVenta(ventaId) {
+        document.getElementById('numeroVentaDetalle').textContent = ventaId;
+        
+        const contenido = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Información de la Venta</h6>
+                    <p><strong>Vendedor:</strong> Carlos Rodríguez</p>
+                    <p><strong>Fecha:</strong> 15/12/2024 10:30 AM</p>
+                    <p><strong>Cliente:</strong> Juan Pérez</p>
+                    <p><strong>Método de Pago:</strong> Efectivo</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Productos</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cant.</th>
+                                    <th>Precio</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Arroz Costeño 5kg</td>
+                                    <td>2</td>
+                                    <td>S/ 18.00</td>
+                                    <td>S/ 36.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Aceite Primor 1L</td>
+                                    <td>1</td>
+                                    <td>S/ 12.00</td>
+                                    <td>S/ 12.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Azúcar Rubia 1kg</td>
+                                    <td>3</td>
+                                    <td>S/ 4.50</td>
+                                    <td>S/ 13.50</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-end">
+                        <strong>Total: S/ 61.50</strong>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('contenidoDetalleVenta').innerHTML = contenido;
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalleVenta'));
+        modal.show();
+    }
+
+    function procesarVenta() {
+        showNotification('Venta procesada exitosamente', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevaVenta'));
+        modal.hide();
+    }
+
+    function imprimirTicket(ventaId) {
+        console.log('Imprimiendo ticket para venta:', ventaId);
+        showNotification('Ticket enviado a impresión', 'info');
+    }
+</script>

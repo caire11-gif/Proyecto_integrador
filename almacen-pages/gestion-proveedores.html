@@ -1,0 +1,112 @@
+<div class="container-fluid">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="fas fa-truck me-2"></i>Proveedores</h4>
+            <p class="text-muted mb-0">Revisar los proveedores</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProveedor" id="btnNuevoProveedor">
+                <i class="fas fa-plus me-2"></i>Nuevo Proveedor
+            </button>
+        </div>
+    </div>
+    
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Lista de Proveedores</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="tablaProveedores">
+                    <thead>
+                        <tr>
+                            <th>Proveedor</th>
+                            <th>Contacto</th>
+                            <th>Productos</th>
+                            <th>Última Entrega</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyProveedores">
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Productos por Proveedor</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="productosProveedores">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalProveedor" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitulo"><i class="fas fa-plus me-2"></i>Nuevo Proveedor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formProveedor">
+                    <input type="hidden" id="proveedorId">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Nombre del Proveedor *</label>
+                            <input type="text" class="form-control" id="nombreProveedor" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" id="descripcionProveedor" rows="2" placeholder="Tipo de productos que ofrece..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Teléfono *</label>
+                            <input type="tel" class="form-control" id="telefonoProveedor" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="emailProveedor">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Dirección *</label>
+                            <textarea class="form-control" id="direccionProveedor" rows="2" required></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" id="estadoProveedor">
+                                <option value="activo">Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Productos (separados por comas) *</label>
+                            <textarea class="form-control" id="productosProveedor" rows="3" placeholder="Ingrese los productos separados por comas" required></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarProveedor">Guardar Proveedor</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="almacen-pages/js/gestion-proveedores.js"></script>

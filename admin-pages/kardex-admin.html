@@ -1,0 +1,325 @@
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0"><i class="fas fa-chart-line me-2"></i>Kardex Principal</h1>
+        <div>
+            <button class="btn btn-mad me-2">
+                <i class="fas fa-download me-2"></i>Exportar
+            </button>
+            <button class="btn btn-outline-secondary">
+                <i class="fas fa-filter me-2"></i>Filtros
+            </button>
+        </div>
+    </div>
+
+    
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Producto</label>
+                    <select class="form-select" id="productFilter">
+                        <option value="">Todos los productos</option>
+                        <option value="1">Coca Cola 500ml</option>
+                        <option value="2">Arroz Costeño 5kg</option>
+                        <option value="3">Aceite Primor 1L</option>
+                        <option value="4">Leche Gloria 1L</option>
+                        <option value="5">Atún Florida 425g</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Desde</label>
+                    <input type="date" class="form-control" id="dateFrom">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Hasta</label>
+                    <input type="date" class="form-control" id="dateTo">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tipo Movimiento</label>
+                    <select class="form-select" id="movementType">
+                        <option value="">Todos</option>
+                        <option value="entrada">Entradas</option>
+                        <option value="salida">Salidas</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4 class="mb-1">156</h4>
+                    <small>Movimientos Hoy</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-success text-white">
+                <div class="card-body text-center">
+                    <h4 class="mb-1">S/ 8,450</h4>
+                    <small>Valor Entradas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-danger text-white">
+                <div class="card-body text-center">
+                    <h4 class="mb-1">S/ 12,780</h4>
+                    <small>Valor Salidas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-info text-white">
+                <div class="card-body text-center">
+                    <h4 class="mb-1">S/ 124,500</h4>
+                    <small>Stock Valorizado</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light border-0">
+            <h5 class="mb-0 text-primary"><i class="fas fa-list-alt me-2"></i>Registro de Movimientos - Septiembre 2025</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered text-center align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th rowspan="2" class="bg-light">Fecha</th>
+                            <th rowspan="2" class="bg-light">Producto</th>
+                            
+                            <th colspan="3" class="bg-success text-white">Entradas</th>
+                            
+                            <th colspan="3" class="bg-danger text-white">Salidas</th>
+                            
+                            <th colspan="3" class="bg-primary text-white">Saldo Final</th>
+                        </tr>
+                        <tr>
+                            
+                            <th class="bg-success-light">Unidades</th>
+                            <th class="bg-success-light">Costo Unit.</th>
+                            <th class="bg-success-light">Costo Total</th>
+                            
+                            <th class="bg-danger-light">Unidades</th>
+                            <th class="bg-danger-light">Costo Unit.</th>
+                            <th class="bg-danger-light">Costo Total</th>
+                            
+                            <th class="bg-primary-light">Unidades</th>
+                            <th class="bg-primary-light">Costo Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td>01/12/2025</td>
+                            <td>
+                                <div class="fw-bold text-primary">Coca Cola 500ml</div>
+                                <small class="text-muted">REF: CC-500-001</small>
+                            </td>
+                            <td class="text-success fw-bold">100</td>
+                            <td>S/ 5.60</td>
+                            <td class="fw-bold">S/ 560.00</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="fw-bold text-info">100</td>
+                            <td class="fw-bold text-primary">S/ 560.00</td>
+                        </tr>
+                        <tr>
+                            <td>05/12/2025</td>
+                            <td>
+                                <div class="fw-bold text-primary">Coca Cola 500ml</div>
+                                <small class="text-muted">REF: CC-500-001</small>
+                            </td>
+                            <td class="text-success fw-bold">10</td>
+                            <td>S/ 5.00</td>
+                            <td class="fw-bold">S/ 50.00</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="fw-bold text-info">110</td>
+                            <td class="fw-bold text-primary">S/ 610.00</td>
+                        </tr>
+                        <tr>
+                            <td>08/12/2025</td>
+                            <td>
+                                <div class="fw-bold text-primary">Coca Cola 500ml</div>
+                                <small class="text-muted">REF: CC-500-001</small>
+                            </td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-danger fw-bold">10</td>
+                            <td>S/ 5.60</td>
+                            <td class="fw-bold">S/ 56.00</td>
+                            <td class="fw-bold text-info">100</td>
+                            <td class="fw-bold text-primary">S/ 554.00</td>
+                        </tr>
+
+                        
+                        <tr>
+                            <td>02/12/2025</td>
+                            <td>
+                                <div class="fw-bold text-success">Arroz Costeño 5kg</div>
+                                <small class="text-muted">REF: AR-5KG-002</small>
+                            </td>
+                            <td class="text-success fw-bold">80</td>
+                            <td>S/ 18.50</td>
+                            <td class="fw-bold">S/ 1,480.00</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="fw-bold text-info">80</td>
+                            <td class="fw-bold text-primary">S/ 1,480.00</td>
+                        </tr>
+                        <tr>
+                            <td>10/12/2025</td>
+                            <td>
+                                <div class="fw-bold text-success">Arroz Costeño 5kg</div>
+                                <small class="text-muted">REF: AR-5KG-002</small>
+                            </td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-danger fw-bold">25</td>
+                            <td>S/ 18.50</td>
+                            <td class="fw-bold">S/ 462.50</td>
+                            <td class="fw-bold text-info">55</td>
+                            <td class="fw-bold text-primary">S/ 1,017.50</td>
+                        </tr>
+
+                        
+                        <tr>
+                            <td>03/12/2025</td>
+                            <td>
+                                <div class="fw-bold text-warning">Aceite Primor 1L</div>
+                                <small class="text-muted">REF: AC-1L-003</small>
+                            </td>
+                            <td class="text-success fw-bold">120</td>
+                            <td>S/ 12.80</td>
+                            <td class="fw-bold">S/ 1,536.00</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="fw-bold text-info">120</td>
+                            <td class="fw-bold text-primary">S/ 1,536.00</td>
+                        </tr>
+                        <tr>
+                            <td>12/12/2025</td>
+                            <td>
+                                <div class="fw-bold text-warning">Aceite Primor 1L</div>
+                                <small class="text-muted">REF: AC-1L-003</small>
+                            </td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-danger fw-bold">48</td>
+                            <td>S/ 12.80</td>
+                            <td class="fw-bold">S/ 614.40</td>
+                            <td class="fw-bold text-info">72</td>
+                            <td class="fw-bold text-primary">S/ 921.60</td>
+                        </tr>
+
+                        
+                        <tr>
+                            <td>06/12/2025</td>
+                            <td>
+                                <div class="fw-bold text-info">Leche Gloria 1L</div>
+                                <small class="text-muted">REF: LG-1L-004</small>
+                            </td>
+                            <td class="text-success fw-bold">200</td>
+                            <td>S/ 6.50</td>
+                            <td class="fw-bold">S/ 1,300.00</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="fw-bold text-info">200</td>
+                            <td class="fw-bold text-primary">S/ 1,300.00</td>
+                        </tr>
+                        <tr>
+                            <td>14/12/2025</td>
+                            <td>
+                                <div class="fw-bold text-info">Leche Gloria 1L</div>
+                                <small class="text-muted">REF: LG-1L-004</small>
+                            </td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-muted">-</td>
+                            <td class="text-danger fw-bold">75</td>
+                            <td>S/ 6.50</td>
+                            <td class="fw-bold">S/ 487.50</td>
+                            <td class="fw-bold text-info">125</td>  
+                            <td class="fw-bold text-primary">S/ 812.50</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            
+            <nav>
+                <ul class="pagination justify-content-center mt-4">
+                    <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<style>
+
+table thead th {
+    font-size: 14px;
+    font-weight: 600;
+    vertical-align: middle;
+}
+table td, 
+table th {
+    font-size: 14px;
+    padding: 0.6rem;
+}
+table tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+.bg-success-light {
+    background-color: #d4edda !important;
+}
+.bg-danger-light {
+    background-color: #f8d7da !important;
+}
+.bg-primary-light {
+    background-color: #cce7ff !important;
+}
+.table-hover tbody tr:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+</style>
+
+<script>
+function initPage() {
+    console.log('Kardex admin inicializado');
+    
+    const today = new Date();
+    const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    document.getElementById('dateFrom').value = lastWeek.toISOString().split('T')[0];
+    document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+
+    
+    document.querySelector('.btn-mad').addEventListener('click', () => {
+        console.log("Exportando reporte...");
+    });
+}
+</script>

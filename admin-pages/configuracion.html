@@ -1,0 +1,133 @@
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0"><i class="fas fa-cog me-2"></i>Configuración del Sistema</h1>
+        <button class="btn btn-mad" onclick="guardarConfiguracion()">
+            <i class="fas fa-save me-2"></i>Guardar Cambios
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0"><i class="fas fa-building me-2"></i>Datos de la Empresa</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre Comercial</label>
+                        <input type="text" class="form-control" value="MAD MARKET" id="companyName">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">RUC</label>
+                        <input type="text" class="form-control" value="20123456781" id="companyRuc">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Dirección</label>
+                        <textarea class="form-control" rows="2" id="companyAddress">Av. Principal 123, Lima, Perú</textarea>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Configuración de Alertas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Stock Mínimo Almacén (cajas)</label>
+                        <input type="number" class="form-control" value="5" id="minStockAlmacen">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Stock Mínimo Tienda (unidades)</label>
+                        <input type="number" class="form-control" value="20" id="minStockTienda">
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="emailAlerts" checked>
+                        <label class="form-check-label" for="emailAlerts">Enviar alertas por email</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información del Sistema</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="text-muted small">Versión</div>
+                            <div class="fw-bold">v2.1.0</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-muted small">Usuarios Activos</div>
+                            <div class="fw-bold">3/4</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-muted small">Empleados</div>
+                            <div class="fw-bold">8</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-muted small">Última Actualización</div>
+                            <div class="fw-bold">01/12/2024</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Configuraciones Adicionales</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="backupAuto" checked>
+                        <label class="form-check-label" for="backupAuto">Backup automático</label>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="notifications" checked>
+                        <label class="form-check-label" for="notifications">Notificaciones push</label>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="autoUpdate">
+                        <label class="form-check-label" for="autoUpdate">Actualizaciones automáticas</label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tiempo de sesión (minutos)</label>
+                        <input type="number" class="form-control" value="30" id="sessionTime">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function initPage() {
+        console.log('Configuración del sistema inicializada');
+    }
+
+    function guardarConfiguracion() {
+        // Recopilar datos del formulario
+        const configData = {
+            companyName: document.getElementById('companyName').value,
+            companyRuc: document.getElementById('companyRuc').value,
+            companyAddress: document.getElementById('companyAddress').value,
+            minStockAlmacen: document.getElementById('minStockAlmacen').value,
+            minStockTienda: document.getElementById('minStockTienda').value,
+            emailAlerts: document.getElementById('emailAlerts').checked,
+            backupAuto: document.getElementById('backupAuto').checked,
+            notifications: document.getElementById('notifications').checked,
+            autoUpdate: document.getElementById('autoUpdate').checked,
+            sessionTime: document.getElementById('sessionTime').value
+        };
+        
+        console.log('Guardando configuración:', configData);
+        showNotification('Configuración guardada exitosamente', 'success');
+    }
+</script>

@@ -1,0 +1,183 @@
+<div class="container-fluid">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="fas fa-arrow-right me-2"></i>Traslados a Tienda</h4>
+            <p class="text-muted mb-0">Gestiona el envío de productos del almacén a la tienda</p>
+        </div>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-lg-5 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Registrar Traslado</h5>
+                </div>
+                <div class="card-body">
+                    <form id="formTraslado">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Producto a Trasladar</label>
+                                <select class="form-select" required>
+                                    <option value="">Seleccionar producto...</option>
+                                    <option value="coca500">Coca Cola 500ml (Stock: 10 cajas)</option>
+                                    <option value="oreo">Galletas Oreo (Stock: 8 cajas)</option>
+                                    <option value="aceite">Aceite Primor 1L (Stock: 4 cajas)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cantidad de Cajas</label>
+                                <input type="number" class="form-control" value="5" min="1" max="10" required>
+                                <small class="text-muted">Máximo disponible: 10 cajas</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Unidades Equivalentes</label>
+                                <input type="number" class="form-control" value="120" readonly>
+                                <small class="text-muted">Calculado automáticamente</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Fecha de Traslado</label>
+                                <input type="date" class="form-control" value="2024-12-19" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Observaciones</label>
+                                <textarea class="form-control" rows="2" placeholder="Motivo del traslado..."></textarea>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-mad">Confirmar Traslado</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="col-lg-7 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Traslados Recientes</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Producto</th>
+                                    <th>Cajas</th>
+                                    <th>Unidades</th>
+                                    <th>Destino</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>18/12/2024</td>
+                                    <td>Coca Cola 500ml</td>
+                                    <td>5 cajas</td>
+                                    <td>120 unidades</td>
+                                    <td>Tienda Principal</td>
+                                    <td><span class="badge bg-success">Completado</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>17/12/2024</td>
+                                    <td>Galletas Oreo</td>
+                                    <td>3 cajas</td>
+                                    <td>36 unidades</td>
+                                    <td>Tienda Principal</td>
+                                    <td><span class="badge bg-success">Completado</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>16/12/2024</td>
+                                    <td>Aceite Primor 1L</td>
+                                    <td>2 cajas</td>
+                                    <td>12 unidades</td>
+                                    <td>Tienda Principal</td>
+                                    <td><span class="badge bg-warning">Pendiente</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Resumen de Stock</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-3">
+                                <i class="fas fa-warehouse fa-2x text-primary mb-2"></i>
+                                <h4>148</h4>
+                                <small>Productos en Almacén</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-3">
+                                <i class="fas fa-store fa-2x text-success mb-2"></i>
+                                <h4>89</h4>
+                                <small>Productos en Tienda</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-3">
+                                <i class="fas fa-exchange-alt fa-2x text-warning mb-2"></i>
+                                <h4>15</h4>
+                                <small>Traslados Este Mes</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function initPage() {
+    console.log('Traslados a tienda cargada');
+    
+    // Calcular unidades automáticamente
+    const selectProducto = document.querySelector('select');
+    const inputCajas = document.querySelector('input[type="number"]');
+    const inputUnidades = document.querySelectorAll('input[type="number"]')[1];
+    
+    // Valores de ejemplo: unidades por caja
+    const unidadesPorCaja = {
+        'coca500': 24,
+        'oreo': 12,
+        'aceite': 6
+    };
+    
+    function calcularUnidades() {
+        const producto = selectProducto.value;
+        const cajas = inputCajas.value;
+        const unidades = unidadesPorCaja[producto] * cajas;
+        inputUnidades.value = unidades || 0;
+    }
+    
+    selectProducto.addEventListener('change', calcularUnidades);
+    inputCajas.addEventListener('input', calcularUnidades);
+}
+</script>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Devolución - MAD MARKET</title>
+    <link rel="stylesheet" href="/vendedor-pages/css/StiloGeneral/styles.css">
+    <link rel="stylesheet" href="/vendedor-pages/css/devoluciones/devoluciones.css">
+</head>
+<body>
+    <main class="devoluciones-main">
+        
+        <section class="buscar-venta">
+            <h3>🔍 Buscar Venta Original</h3>
+            <div class="busqueda-venta">
+                <div class="busqueda-opciones">
+                    <div class="opcion-group">
+                        <label for="opcionTicket">Código de boletas-facturas</label>
+                    </div>
+                </div>
+
+                <div class="busqueda-input">
+                    <input type="text" id="inputBusquedaVenta" placeholder="Ingresa Código de boletas-facturas">
+                    <button id="btnBuscarVenta" class="btn btn-primary">Buscar</button>
+                </div>
+            </div>
+        </section>
+
+        
+        <section class="info-venta" id="seccionInfoVenta" style="display: none;">
+            <h3>📄 Información de la Venta</h3>
+            <div class="venta-detalle" id="detalleVenta">
+                
+            </div>
+        </section>
+
+        
+        <section class="seleccion-productos" id="seccionProductos" style="display: none;">
+            <h3>🛒 Seleccionar Productos a Devolver</h3>
+            <div class="productos-venta" id="listaProductosVenta">
+                
+            </div>
+        </section>
+
+        
+        <section class="registro-devolucion" id="seccionRegistro" style="display: none;">
+            <h3>📝 Registrar Devolución</h3>
+            <form id="formDevolucion" class="form-devolucion">
+                <div class="form-group">
+                    <label for="selectMotivo">Motivo de la devolución:</label>
+                    <select id="selectMotivo" required>
+                        <option value="">Seleccionar motivo...</option>
+                        <option value="defectuoso">Producto defectuoso</option>
+                        <option value="insatisfecho">Cliente insatisfecho</option>
+                        <option value="error">Error en la venta</option>
+                        <option value="otro">Otro motivo</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="textareaObservaciones">Observaciones:</label>
+                    <textarea id="textareaObservaciones" placeholder="Detalles adicionales..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="inputFoto">Subir foto (opcional):</label>
+                    <input type="file" id="inputFoto" accept="image/*">
+                </div>
+
+                <div class="resumen-devolucion">
+                    <h4>Resumen de Devolución</h4>
+                    <div id="resumenProductosDevolucion"></div>
+                    <div class="total-devolucion">
+                        Total a devolver: <span id="totalDevolucion">$0.00</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success">✅ Procesar Devolución</button>
+            </form>
+        </section>
+    </main>
+
+    
+    <div id="modalDevolucion" class="modal">
+        <div class="modal-content">
+            <h3>✅ Devolución Registrada</h3>
+            <div id="resumenDevolucionFinal"></div>
+            <div class="modal-actions">
+                <button id="btnNuevaDevolucion" class="btn btn-primary">↩️ Nueva Devolución</button>
+                <button id="btnVolverDashboard" class="btn btn-secondary">🏠 Volver al Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/devoluciones.js"></script>
+</body>
+</html>

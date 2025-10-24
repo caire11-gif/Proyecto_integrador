@@ -1,0 +1,179 @@
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0"><i class="fas fa-tachometer-alt me-2"></i>Dashboard Administrativo</h1>
+        <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-mad w-100" id="btnNuevaAlerta">
+                        <i class="fas fa-plus me-2"></i>Nueva notificacion
+                    </button>
+                </div>
+    </div>
+<div class="text-muted">Hoy: <span id="currentDate"></span></div>
+<br>
+    
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Ventas del Mes</div>
+                            <div class="h4 mb-0 text-primary">S/ 45,680</div>
+                        </div>
+                        <div class="bg-primary text-white rounded p-3">
+                            <i class="fas fa-shopping-cart fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-success small">
+                            <i class="fas fa-arrow-up"></i> 12.5% vs mes anterior
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Margen Ganancia</div>
+                            <div class="h4 mb-0 text-success">28.3%</div>
+                        </div>
+                        <div class="bg-success text-white rounded p-3">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-success small">
+                            <i class="fas fa-arrow-up"></i> 2.1% mejor
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Stock Valorizado</div>
+                            <div class="h4 mb-0 text-info">S/ 124,500</div>
+                        </div>
+                        <div class="bg-info text-white rounded p-3">
+                            <i class="fas fa-boxes fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-muted small">215 productos</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Ticket Promedio</div>
+                            <div class="h4 mb-0 text-warning">S/ 42.50</div>
+                        </div>
+                        <div class="bg-warning text-white rounded p-3">
+                            <i class="fas fa-receipt fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-success small">
+                            <i class="fas fa-arrow-up"></i> S/ 3.20 más
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Últimos Movimientos Kardex</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">Coca Cola 3L</div>
+                                <small class="text-muted">Venta - 15 unidades</small>
+                            </div>
+                            <span class="badge bg-danger">Salida</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">Arroz Costeño</div>
+                                <small class="text-muted">Compra - 50 cajas</small>
+                            </div>
+                            <span class="badge bg-success">Entrada</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">Aceite Primor</div>
+                                <small class="text-muted">Traslado - 24 unidades</small>
+                            </div>
+                            <span class="badge bg-info">Movimiento</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Personal Activo</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">María Alvarez</div>
+                                <small class="text-muted">Encargado Almacén - 8.5h hoy</small>
+                            </div>
+                            <span class="badge bg-success">Activo</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">Carlos Rodríguez</div>
+                                <small class="text-muted">Vendedor - 7.2h hoy</small>
+                            </div>
+                            <span class="badge bg-success">Activo</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">Ana Torres</div>
+                                <small class="text-muted">Vendedor - Descanso</small>
+                            </div>
+                            <span class="badge bg-secondary">Inactivo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Actualizar fecha actual
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    function initPage() {
+        console.log('Dashboard admin inicializado');
+    }
+</script>

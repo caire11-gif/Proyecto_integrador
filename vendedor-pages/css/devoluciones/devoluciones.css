@@ -1,0 +1,172 @@
+/* ===== DEVOLUCIONES MEJORADO ===== */
+.devoluciones-main {
+  background: var(--card-bg, #fff);
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid #e0e0e0;
+  max-width: 1100px;
+  margin: 20px auto;
+  font-size: 1.05rem;
+}
+
+h2, h3 {
+  color: var(--primary, #007bff);
+  margin-bottom: 16px;
+  font-weight: 700;
+}
+
+/* Buscar Venta */
+.buscar-venta {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.busqueda-opciones {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.opcion-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.busqueda-input {
+  display: flex;
+  gap: 12px;
+}
+
+.busqueda-input input {
+  flex: 1;
+  padding: 14px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  background: #f9f9f9;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.busqueda-input input:focus {
+  border-color: var(--secondary, #3498db);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(52,152,219,0.15);
+}
+
+/* Información Venta */
+.info-venta .venta-detalle {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+/* Selección Productos */
+.productos-venta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.producto-devolucion {
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.producto-devolucion:hover {
+  border-color: var(--secondary, #3498db);
+  transform: translateY(-3px);
+}
+
+.producto-devolucion.seleccionado {
+  border-color: var(--success, #27ae60);
+  background: rgba(39,174,96,0.08);
+}
+
+/* Registro */
+.form-devolucion {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.form-devolucion .form-group {
+  margin-bottom: 20px;
+}
+
+.form-devolucion select,
+.form-devolucion textarea,
+.form-devolucion input[type="file"] {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  background: #f8f9fa;
+  transition: all 0.3s;
+  font-size: 1rem;
+}
+
+.form-devolucion select:focus,
+.form-devolucion textarea:focus,
+.form-devolucion input[type="file"]:focus {
+  border-color: var(--secondary, #3498db);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(52,152,219,0.15);
+}
+
+.form-devolucion textarea {
+  min-height: 120px;
+}
+
+/* Resumen */
+.resumen-devolucion {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 18px;
+  margin: 20px 0;
+}
+
+.total-devolucion {
+  text-align: right;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary, #007bff);
+  border-top: 2px solid #ddd;
+  padding-top: 10px;
+}
+
+/* Modal */
+.modal .modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 600px;
+  margin: auto;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .busqueda-input {
+    flex-direction: column;
+  }
+  .busqueda-opciones {
+    flex-direction: column;
+  }
+}

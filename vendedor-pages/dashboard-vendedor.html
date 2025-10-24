@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - MAD MARKET</title>
+    <link rel="stylesheet" href="/vendedor-pages/css/dashboard/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        
+        <section class="info-turno">
+            <div class="turno-card">
+                <h3><i class="fas fa-chart-line"></i> Resumen Turno Actual</h3>
+                <div class="turno-stats">
+                    <div class="stat">
+                        <span class="stat-value" id="ventasHoy">0</span>
+                        <span class="stat-label">Ventas Hoy</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="totalVendido">$0.00</span>
+                        <span class="stat-label">Total Vendido</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="tiempoActivo">0h 0m</span>
+                        <span class="stat-label">Tiempo Activo</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        
+        <section class="acciones-principales">
+            <h3><i class="fas fa-bolt"></i> Acciones Rápidas</h3>
+            <div class="acciones-grid">
+                <div class="accion-card" onclick="parent.document.getElementById('contentFrame').src='nueva-venta.html'">
+                    <div class="accion-icon"><i class="fas fa-cash-register"></i></div>
+                    <div class="accion-title">Nueva Venta</div>
+                    <div class="accion-desc">Registrar venta al público</div>
+                </div>
+
+                <div class="accion-card" onclick="parent.document.getElementById('contentFrame').src='boletas-facturas.html'">
+                    <div class="accion-icon"><i class="fas fa-boxes"></i></div>
+                    <div class="accion-title">Consultar Stock</div>
+                    <div class="accion-desc">Ver disponibilidad productos</div>
+                </div>
+
+                <div class="accion-card" onclick="parent.document.getElementById('contentFrame').src='boletas-facturas.html'">
+                    <div class="accion-icon"><i class="fas fa-receipt"></i></div>
+                    <div class="accion-title">Boletas-Facturas</div>
+                    <div class="accion-desc">Crear boletas-facturas</div>
+                </div>
+
+                <div class="accion-card" onclick="parent.document.getElementById('contentFrame').src='registrar-devolucion.html'">
+                    <div class="accion-icon"><i class="fas fa-undo-alt"></i></div>
+                    <div class="accion-title">Registrar Devolución</div>
+                    <div class="accion-desc">Procesar devoluciones</div>
+                </div>
+            </div>
+        </section>
+
+        
+        <section class="ventas-recientes">
+            <h3><i class="fas fa-history"></i> Ventas Recientes</h3>
+            <div class="ventas-list">
+                <div class="venta-item">
+                    <div class="venta-info">
+                        <span class="venta-id">#00125</span>
+                        <span class="venta-productos">Coca Cola, Galletas Oreo</span>
+                    </div>
+                    <div class="venta-total">$25.50</div>
+                </div>
+                <div class="venta-item">
+                    <div class="venta-info">
+                        <span class="venta-id">#00124</span>
+                        <span class="venta-productos">Arroz, Aceite, Leche</span>
+                    </div>
+                    <div class="venta-total">$42.80</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+       
+        document.getElementById('ventasHoy').textContent = '2';
+        document.getElementById('totalVendido').textContent = '$68.30';
+        
+        function actualizarTiempo() {
+            const horas = 4;
+            const minutos = 30;
+            document.getElementById('tiempoActivo').textContent = `${horas}h ${minutos}m`;
+        }
+        actualizarTiempo();
+    </script>
+</body>
+</html>

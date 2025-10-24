@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAD MARKET - Iniciar Sesión</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --mad-primary: #2c3e50;
+            --mad-secondary: #3498db;
+            --mad-accent: #e74c3c;
+            --mad-success: #27ae60;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .login-header {
+            background: linear-gradient(135deg, var(--mad-primary) 0%, #1a2530 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .login-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .login-header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+        
+        .login-body {
+            padding: 2rem;
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--mad-secondary);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+        
+        .input-group-text {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, var(--mad-secondary) 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .login-footer {
+            text-align: center;
+            padding: 1rem 2rem;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .login-footer a {
+            color: var(--mad-secondary);
+            text-decoration: none;
+        }
+        
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .credential-hint {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-left: 4px solid var(--mad-secondary);
+        }
+        
+        .credential-hint h6 {
+            margin-bottom: 0.5rem;
+            color: var(--mad-primary);
+        }
+        
+        .credential-hint code {
+            background: #e9ecef;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1><i class="fas fa-store me-2"></i>MAD MARKET</h1>
+            <p>Sistema de Gestión Integral</p>
+        </div>
+        
+        <div class="login-body">
+            <div id="loginAlert" class="alert alert-danger d-none">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span id="alertMessage"></span>
+            </div>
+            
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label class="form-label">Usuario</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        <input type="text" class="form-control" id="username" placeholder="Ingresa tu usuario" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Contraseña</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" class="form-control" id="password" placeholder="Ingresa tu contraseña" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                    <label class="form-check-label" for="rememberMe">Recordar sesión</label>
+                </div>
+                
+                <button type="submit" class="btn btn-login w-100">
+                    <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
+                </button>
+            </form>
+            
+            
+            <div class="credential-hint">
+                <h6><i class="fas fa-key me-2"></i>Credenciales de Prueba</h6>
+                <div class="small">
+                    <strong>Admin:</strong> <code>admin</code> / <code>madmarket2024</code><br>
+                    <strong>Almacén:</strong> <code>maria.alvarez</code> / <code>madmarket2024</code><br>
+                    <strong>Vendedor:</strong> <code>carlos.rodriguez</code> / <code>madmarket2024</code>
+                </div>
+            </div>
+        </div>
+        
+        <div class="login-footer">
+            <small class="text-muted">
+                ¿Problemas para acceder? <a href="#">Contactar al administrador</a>
+            </small>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+
+        const usuariosValidos = {
+            'admin': { 
+                password: 'madmarket2024', 
+                rol: 'administrador',
+                nombre: 'Admin Principal',
+                redirect: 'administrador.html'
+            },
+            'maria.alvarez': { 
+                password: 'madmarket2024', 
+                rol: 'almacen',
+                nombre: 'María Alvarez',
+                redirect: 'almacen.html'
+            },
+            'carlos.rodriguez': { 
+                password: 'madmarket2024', 
+                rol: 'vendedor',
+                nombre: 'Carlos Rodríguez',
+                redirect: 'vendedor.html'
+            }
+        };
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const alertDiv = document.getElementById('loginAlert');
+            const alertMessage = document.getElementById('alertMessage');
+            
+        
+            if (usuariosValidos[username] && usuariosValidos[username].password === password) {
+   
+                const usuario = usuariosValidos[username];
+                
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Iniciando sesión...';
+                submitBtn.disabled = true;
+                
+        
+                setTimeout(() => {
+                    sessionStorage.setItem('usuarioLogueado', JSON.stringify({
+                        username: username,
+                        nombre: usuario.nombre,
+                        rol: usuario.rol,
+                        loginTime: new Date().toISOString()
+                    }));
+                    window.location.href = usuario.redirect;
+                    
+                }, 1500);
+                
+            } else {
+                alertMessage.textContent = 'Usuario o contraseña incorrectos';
+                alertDiv.classList.remove('d-none');
+                this.classList.add('shake');
+                setTimeout(() => {
+                    this.classList.remove('shake');
+                }, 500);
+            }
+        });
+        const style = document.createElement('style');
+        style.textContent = `
+            .shake {
+                animation: shake 0.5s ease-in-out;
+            }
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(style);
+        document.getElementById('username').addEventListener('input', hideAlert);
+        document.getElementById('password').addEventListener('input', hideAlert);
+        
+        function hideAlert() {
+            document.getElementById('loginAlert').classList.add('d-none');
+        }
+        document.getElementById('username').focus();
+
+        window.addEventListener('load', function() {
+            const usuarioLogueado = sessionStorage.getItem('usuarioLogueado');
+            if (usuarioLogueado) {
+                const usuario = JSON.parse(usuarioLogueado);
+                window.location.href = usuariosValidos[usuario.username].redirect;
+            }
+        });
+        document.getElementById('username').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !this.value.trim()) {
+                e.preventDefault();
+                document.getElementById('username').value = 'admin';
+                document.getElementById('password').value = 'madmarket2024';
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>

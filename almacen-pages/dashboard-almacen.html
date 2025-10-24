@@ -1,0 +1,209 @@
+<div class="container-fluid">
+    
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card primary h-100">
+                <i class="fas fa-boxes text-primary"></i>
+                <div class="number">148</div>
+                <div class="label">Productos en Almacén</div>
+                <small class="text-muted">12 categorías activas</small>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card success h-100">
+                <i class="fas fa-truck-loading text-success"></i>
+                <div class="number">23</div>
+                <div class="label">Entradas Este Mes</div>
+                <small class="text-muted">+5% vs mes anterior</small>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card warning h-100">
+                <i class="fas fa-exclamation-triangle text-warning"></i>
+                <div class="number">7</div>
+                <div class="label">Alertas Activas</div>
+                <small class="text-muted">3 requieren atención urgente</small>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card danger h-100">
+                <i class="fas fa-arrow-right text-danger"></i>
+                <div class="number">15</div>
+                <div class="label">Traslados Pendientes</div>
+                <small class="text-muted">5 para hoy</small>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Acciones Rápidas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-xl-3 col-md-6">
+                            <button class="btn btn-mad w-100 h-100 py-3" onclick="loadContent('entradas-proveedor')">
+                                <i class="fas fa-truck-loading fa-2x mb-2 d-block"></i>
+                                <span class="fw-bold">Nueva Entrada</span>
+                                <small class="d-block mt-1">Registrar compra</small>
+                            </button>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <button class="btn btn-success w-100 h-100 py-3" onclick="loadContent('traslados-tienda')">
+                                <i class="fas fa-arrow-right fa-2x mb-2 d-block"></i>
+                                <span class="fw-bold">Traslado a Tienda</span>
+                                <small class="d-block mt-1">Envío de productos</small>
+                            </button>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <button class="btn btn-warning w-100 h-100 py-3" onclick="loadContent('gestion-productos')">
+                                <i class="fas fa-plus-circle fa-2x mb-2 d-block"></i>
+                                <span class="fw-bold">Nuevo Producto</span>
+                                <small class="d-block mt-1">Agregar al sistema</small>
+                            </button>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <button class="btn btn-info w-100 h-100 py-3" onclick="loadContent('alertas-stock')">
+                                <i class="fas fa-bell fa-2x mb-2 d-block"></i>
+                                <span class="fw-bold">Ver Alertas</span>
+                                <small class="d-block mt-1">Revisar stock</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-xl-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Alertas de Stock Urgentes</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1 text-danger">Coca Cola 500ml</h6>
+                                    <p class="mb-1">Stock en almacén: <strong>2 cajas</strong> (mínimo: 5)</p>
+                                    <small class="text-muted">Última entrada: 15/12/2024</small>
+                                </div>
+                                <span class="badge bg-danger">URGENTE</span>
+                            </div>
+                        </div>
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1 text-warning">Galletas Oreo</h6>
+                                    <p class="mb-1">Stock en tienda: <strong>8 unidades</strong> (mínimo: 15)</p>
+                                    <small class="text-muted">Último traslado: 18/12/2024</small>
+                                </div>
+                                <span class="badge bg-warning">BAJO</span>
+                            </div>
+                        </div>
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1 text-warning">Aceite Primor 1L</h6>
+                                    <p class="mb-1">Stock en almacén: <strong>4 cajas</strong> (mínimo: 6)</p>
+                                    <small class="text-muted">Última entrada: 12/12/2024</small>
+                                </div>
+                                <span class="badge bg-warning">BAJO</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="col-xl-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Movimientos Recientes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <small class="text-muted">Hoy, 10:30 AM</small>
+                            <p class="mb-0"><i class="fas fa-truck-loading text-success me-2"></i>Entrada de 10 cajas de Leche Gloria</p>
+                        </div>
+                        <div class="timeline-item warning">
+                            <small class="text-muted">Hoy, 09:15 AM</small>
+                            <p class="mb-0"><i class="fas fa-arrow-right text-warning me-2"></i>Traslado de 5 cajas de Aceite a tienda</p>
+                        </div>
+                        <div class="timeline-item">
+                            <small class="text-muted">Ayer, 15:45 PM</small>
+                            <p class="mb-0"><i class="fas fa-truck-loading text-success me-2"></i>Entrada de 8 cajas de Arroz Costeño</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Productos que Requieren Atención</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Stock Almacén</th>
+                                    <th>Stock Tienda</th>
+                                    <th>Mínimo</th>
+                                    <th>Estado</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Coca Cola 500ml</strong></td>
+                                    <td>Bebidas</td>
+                                    <td><span class="badge bg-danger">2 cajas</span></td>
+                                    <td><span class="badge bg-success">24 unid.</span></td>
+                                    <td>5 cajas</td>
+                                    <td><span class="badge bg-danger">Crítico</span></td>
+                                    <td><button class="btn btn-sm btn-outline-primary">Solicitar</button></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Galletas Oreo</strong></td>
+                                    <td>Galletas</td>
+                                    <td><span class="badge bg-warning">8 cajas</span></td>
+                                    <td><span class="badge bg-danger">8 unid.</span></td>
+                                    <td>15 unid.</td>
+                                    <td><span class="badge bg-warning">Bajo</span></td>
+                                    <td><button class="btn btn-sm btn-outline-warning">Trasladar</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function initPage() {
+    console.log('Dashboard del almacén cargado');
+    
+    // Simular carga de datos reales
+    setTimeout(() => {
+        showNotification('Sistema actualizado correctamente', 'success');
+    }, 1000);
+}
+</script>

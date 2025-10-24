@@ -1,0 +1,105 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Venta - MAD MARKET</title>
+    <link rel="stylesheet" href="/vendedor-pages/css/StiloGeneral/styles.css">
+    <link rel="stylesheet" href="/vendedor-pages/css/ventas/ventas.css">
+</head>
+<body>
+    <main class="ventas-main">
+        
+        <section class="panel-busqueda">
+            <div class="busqueda-header">
+                <h3>🔍 Buscar Producto</h3>
+            </div>
+
+            <div class="busqueda-input">
+                <input type="text" id="inputBusqueda" placeholder="Código de barras, nombre o código..." autofocus>
+                <button id="btnBuscar" class="btn btn-primary">Buscar</button>
+            </div>
+
+            <div class="resultados-busqueda" id="resultadosBusqueda">
+                
+            </div>
+
+            
+            <div class="productos-frecuentes">
+                <h4>Lista de Productos</h4>
+                <div class="frecuentes-grid" id="gridFrecuentes">
+                    
+                </div>
+            </div>
+        </section>
+
+        
+        <section class="panel-venta">
+            <div class="venta-header">
+                <h3>Venta Actual</h3>
+                <button id="btnLimpiar" class="btn btn-secondary">Limpiar Todo</button>
+            </div>
+
+            <div class="lista-productos" id="listaProductosVenta">
+                <div class="empty-state">
+                    <p>No hay productos agregados</p>
+                    <small>Busca y agrega productos para comenzar</small>
+                </div>
+            </div>
+
+            <div class="resumen-venta">
+                <div class="resumen-linea">
+                    <span>Subtotal:</span>
+                    <span id="subtotal">$0.00</span>
+                </div>
+                <div class="resumen-linea">
+                    <span>IGV (18%):</span>
+                    <span id="igv">$0.00</span>
+                </div>
+                <div class="resumen-linea total">
+                    <span>TOTAL:</span>
+                    <span id="totalVenta">$0.00</span>
+                </div>
+
+                <div class="metodos-pago">
+                    <h4>💳 Método de Pago</h4>
+                    <div class="metodos-grid">
+                        <button class="metodo-btn active" data-metodo="efectivo">💵 Efectivo</button>
+                        <button class="metodo-btn" data-metodo="tarjeta">💳 Tarjeta</button>
+                        <button class="metodo-btn" data-metodo="transferencia">📱 Transferencia</button>
+                    </div>
+
+                    <div class="monto-efectivo" id="montoEfectivo">
+                        <label for="inputEfectivo">Efectivo recibido:</label>
+                        <input type="number" id="inputEfectivo" placeholder="0.00" step="0.01">
+                        <div class="cambio-info">
+                            Cambio: <span id="cambio">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btnFinalizar" class="btn btn-success btn-large" disabled>
+                    FINALIZAR VENTA
+                </button>
+            </div>
+        </section>
+    </main>
+
+    
+    <div id="modalConfirmacion" class="modal">
+        <div class="modal-content">
+            <h3>✅ Venta Registrada Exitosamente</h3>
+            <div class="venta-resumen" id="resumenFinal"></div>
+            <div class="modal-actions">
+                <button id="btnNuevaVenta" class="btn btn-success">🧾 Nueva Venta</button>
+                <button id="btnCerrarModal" class="btn btn-secondary">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/pages2/js/utils.js"></script>
+    <script src="/pages2/js/ventas.js"></script>
+</body>
+</html>
+```

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boletas y Facturas - MAD MARKET</title>
+  <link rel="stylesheet" href="/vendedor-pages/css/StiloGeneral/styles.css">
+  <link rel="stylesheet" href="/vendedor-pages/css/documentos/documentos.css">
+</head>
+<body>
+  <main class="documentos-main">
+    
+    
+    <section class="configuracion-documento">
+      <h2>⚙️ Configurar Documento</h2>
+      <div class="config-grid">
+
+        
+        <div class="config-group">
+          <label>Tipo de Documento:</label>
+          <div class="tipo-documento">
+            <div class="tipo-option">
+              <input type="radio" id="tipoBoleta" name="tipoDocumento" value="boleta" checked>
+              <label for="tipoBoleta" class="tipo-label">
+                <span class="tipo-icon">🧾</span>
+                <span class="tipo-name">BOLETA</span>
+                <span class="tipo-desc">Consumidor final</span>
+              </label>
+            </div>
+            <div class="tipo-option">
+              <input type="radio" id="tipoFactura" name="tipoDocumento" value="factura">
+              <label for="tipoFactura" class="tipo-label">
+                <span class="tipo-icon">📄</span>
+                <span class="tipo-name">FACTURA</span>
+                <span class="tipo-desc">Con RUC</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        
+        <div class="config-group" id="grupoCliente" style="display:none;">
+          <label>Datos del Cliente:</label>
+          <div class="datos-cliente">
+            <input type="text" id="inputRUC" placeholder="RUC (11 dígitos)" maxlength="11">
+            <input type="text" id="inputRazonSocial" placeholder="Razón Social">
+            <input type="text" id="inputDireccion" placeholder="Dirección">
+            <button id="btnBuscarSunat" class="btn btn-info">🔍 Buscar en SUNAT</button>
+          </div>
+        </div>
+
+        
+        <div class="config-group">
+          <label>Configuración de Impresión:</label>
+          <div class="config-impresion">
+            <div class="impresion-option">
+              <input type="radio" id="impresionAuto" name="impresion" value="auto" checked>
+              <label for="impresionAuto">🖨️ Imprimir automáticamente</label>
+            </div>
+            <div class="impresion-option">
+              <input type="radio" id="impresionEmail" name="impresion" value="email">
+              <label for="impresionEmail">📧 Enviar por email</label>
+              <input type="email" id="inputEmail" placeholder="correo@ejemplo.com" style="display:none;">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    
+    <section class="vista-previa">
+      <h2>Vista Previa del Documento</h2>
+      <div class="documento-preview">
+        <div class="documento-header">
+          <div class="doc-tipo" id="previewTipo">BOLETA DE VENTA</div>
+          <div class="doc-numero">N° <span id="previewNumero">B001-0000001</span></div>
+        </div>
+        
+        <div class="documento-body">
+          <div class="doc-cliente" id="previewCliente">
+            <strong>Cliente:</strong> CONSUMIDOR FINAL
+          </div>
+
+          <div class="doc-detalles">
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th>Cant</th>
+                  <th>Descripción</th>
+                  <th>P. Unit.</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody id="previewProductos"></tbody>
+            </table>
+          </div>
+
+          <div class="doc-totales">
+            <div class="total-line">
+              <span>Subtotal:</span>
+              <span id="previewSubtotal">$0.00</span>
+            </div>
+            <div class="total-line">
+              <span>IGV (18%):</span>
+              <span id="previewIGV">$0.00</span>
+            </div>
+            <div class="total-line total-final">
+              <span>TOTAL:</span>
+              <span id="previewTotal">$0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+    <section class="historial-documentos">
+      <h2>Historial de Documentos</h2>
+      <div class="filtros-historial">
+        <select id="filtroTipoDoc">
+          <option value="">Todos los tipos</option>
+          <option value="boleta">Boletas</option>
+          <option value="factura">Facturas</option>
+        </select>
+        <input type="date" id="filtroFecha">
+        <button id="btnBuscarHistorial" class="btn btn-primary">Buscar</button>
+      </div>
+
+      <div class="tabla-documentos">
+        <table class="documentos-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Número</th>
+              <th>Cliente</th>
+              <th>Total</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyDocumentos"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  
+</body>
+</html>
+```

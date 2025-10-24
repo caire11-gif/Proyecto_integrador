@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAD MARKET - Panel Administrador</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+ :root {
+    --primary: #2c3e50;
+    --secondary: #3498db;
+    --accent: #e67e22;
+    --success: #27ae60;
+    --warning: #f39c12;
+    --danger: #e74c3c;
+    --light-bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-dark: #2c3e50;
+    --text-light: #7f8c8d;
+    --border: #e0e0e0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ec 100%);
+    color: var(--text-dark);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* Sidebar mejorado */
+.sidebar {
+    background: linear-gradient(180deg, var(--primary) 0%, #1a2530 100%);
+    color: white;
+    height: 100vh;
+    position: fixed;
+    padding-top: 0;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+    z-index: 1000;
+    width: 280px;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    transition: transform 0.3s ease;
+}
+
+.sidebar .logo {
+    padding: 25px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.1);
+}
+
+.sidebar .logo h4 {
+    font-weight: 700;
+    font-size: 1.4rem;
+    margin: 0;
+    color: #fff;
+}
+
+.sidebar .logo small {
+    color: #bdc3c7;
+    font-size: 0.85rem;
+}
+
+.nav-link {
+    color: rgba(255,255,255,0.8);
+    padding: 14px 20px;
+    margin: 2px 15px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    border: none;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.nav-link::before {
+    content: '';
+    position: absolute;
+    left: -100%;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s;
+}
+
+.nav-link:hover::before {
+    left: 100%;
+}
+
+.nav-link:hover, .nav-link.active {
+    background: rgba(52, 152, 219, 0.2);
+    color: #fff;
+    transform: translateX(5px);
+    border-left: 3px solid var(--secondary);
+}
+
+.nav-link i {
+    margin-right: 12px;
+    width: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.main-content {
+    margin-left: 280px;
+    padding: 30px;
+    min-height: 100vh;
+    background: transparent;
+    transition: margin-left 0.3s ease;
+}
+
+/* Header mejorado */
+.header {
+    background: var(--card-bg);
+    padding: 25px 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.08);
+    margin-bottom: 30px;
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.search-box {
+    position: relative;
+    max-width: 400px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+    z-index: 2;
+}
+
+.search-box input {
+    padding: 12px 20px 12px 50px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #f8f9fa;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+    width: 100%;
+}
+
+.search-box input:focus {
+    background: #fff;
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--secondary), var(--accent));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+.notification-badge {
+    background: linear-gradient(135deg, var(--danger), #c0392b);
+    color: white;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-left: 8px;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* Menú móvil */
+.mobile-menu-btn {
+    display: none;
+    position: fixed;
+    top: 25px;
+    left: 25px;
+    z-index: 1100;
+    background: linear-gradient(135deg, var(--secondary), var(--accent));
+    border: none;
+    border-radius: 10px;
+    width: 50px;
+    height: 50px;
+    color: white;
+    font-size: 1.3rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+    }
+    
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        margin-left: 0;
+        padding: 20px;
+    }
+    
+    .mobile-menu-btn {
+        display: flex;
+    }
+    
+    .header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .search-box {
+        max-width: 100%;
+    }
+}
+
+/* Contenido de páginas */
+.page-content {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+    </style>
+</head>
+<body>
+    
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <h4><i class="fas fa-store"></i> MAD MARKET</h4>
+            <small id="userRole">Administrador</small>
+        </div>
+        <ul class="nav flex-column mt-3" id="mainMenu">
+            
+        </ul>
+    </div>
+
+    
+    <div class="main-content" id="mainContent">
+        
+        <div class="header">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control" placeholder="Buscar reportes, movimientos..." id="globalSearch">
+            </div>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">AP</div>
+                <div>
+                    <div class="fw-bold fs-5" id="userName">Admin Principal</div>
+                    <small class="text-muted" id="userPosition">Administrador</small>
+                </div>
+            </div>
+        </div>
+
+        
+        <div id="content-area">
+            <div class="loading text-center py-5">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                <p class="fs-5 text-muted">Iniciando Panel Administrativo...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuración del sistema para Administrador
+        const sistemaConfig = {
+            usuario: {
+                nombre: "Admin Principal",
+                rol: "Administrador",
+                iniciales: "AP"
+            },
+            menu: [
+                { 
+                    icon: "fas fa-tachometer-alt", 
+                    text: "Dashboard", 
+                    page: "dashboard-admin",
+                    badge: null
+                },
+                { 
+                    icon: "fas fa-chart-line", 
+                    text: "Kardex Principal", 
+                    page: "kardex-admin",
+                    badge: null
+                },
+                { 
+                    icon: "fas fa-truck", 
+                    text: "Proveedores", 
+                    page: "gestion-proveedores",
+                    badge: null
+                },
+                { 
+                    icon: "fas fa-users", 
+                    text: "Control Personal", 
+                    page: "control-personal",
+                    badge: null
+                },
+                  { 
+                    icon: "fas fa-cash-register me-2", 
+                    text: "Registro de Ventas", 
+                    page: "Registro-de-Ventas",
+                    badge: null
+                },
+                { 
+                    icon: "fas fa-cog", 
+                    text: "Configuración", 
+                    page: "configuracion",
+                    badge: null
+                },
+                { 
+                    icon: "fas fa-sign-out-alt", 
+                    text: "Cerrar Sesión", 
+                    action: "logout"
+                }
+            ]
+        };
+
+        // Función para cargar contenido de páginas
+        async function loadContent(page) {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="loading text-center py-5">
+                    <div class="spinner-border text-primary mb-3" style="width: 2rem; height: 2rem;"></div>
+                    <p class="text-muted">Cargando ${getPageName(page)}...</p>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`admin-pages/${page}.html`);
+                if (!response.ok) throw new Error('Página no encontrada');
+                
+                const content = await response.text();
+                contentArea.innerHTML = content;
+                
+                // Inicializar funcionalidades específicas de la página
+                if (typeof initPage === 'function') {
+                    setTimeout(initPage, 100);
+                }
+                
+            } catch (error) {
+                contentArea.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Error al cargar la página</h4>
+                        <p>${error.message}</p>
+                        <button class="btn btn-mad mt-2" onclick="loadContent('dashboard-admin')">
+                            <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Función para obtener nombre legible de la página
+        function getPageName(page) {
+            const names = {
+                'dashboard-admin': 'Dashboard Administrador',
+                'kardex-admin': 'Kardex Principal',
+                'control-personal': 'Control de Personal',
+                'estado-financiero': 'Estado Financiero',
+                'configuracion': 'Configuración del Sistema'
+            };
+            return names[page] || page;
+        }
+
+   function logout() {
+    if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+        // AL ACEPTAR: va a login.html
+        document.body.style.opacity = '0.7';
+        setTimeout(() => {
+            sessionStorage.removeItem('usuarioLogueado');
+            alert('Sesión cerrada - Redirigiendo al login...');
+            window.location.href = 'login.html';
+        }, 500);
+    } else {
+        // AL CANCELAR: va al dashboard del ADMINISTRADOR
+        loadContent('dashboard-admin'); // ← CORREGIDO
+        
+        // Actualizar la navegación activa
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        const dashboardLink = document.querySelector('.nav-link[data-page="dashboard-admin"]'); // ← CORREGIDO
+        if (dashboardLink) {
+            dashboardLink.classList.add('active');
+        }
+    }
+}
+
+        // Inicialización del sistema
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configurar información del usuario
+            document.getElementById('userName').textContent = sistemaConfig.usuario.nombre;
+            document.getElementById('userPosition').textContent = sistemaConfig.usuario.rol;
+            document.getElementById('userRole').textContent = sistemaConfig.usuario.rol;
+            document.getElementById('userAvatar').textContent = sistemaConfig.usuario.iniciales;
+            
+            // Construir menú lateral
+            const menuContainer = document.getElementById('mainMenu');
+            menuContainer.innerHTML = sistemaConfig.menu.map(item => `
+                <li class="nav-item">
+                    <a class="nav-link ${item.page === 'dashboard-admin' ? 'active' : ''}" 
+                       href="#" 
+                       data-page="${item.page || ''}" 
+                       data-action="${item.action || ''}">
+                        <i class="${item.icon}"></i> 
+                        <span>${item.text}</span>
+                        ${item.badge ? `<span class="notification-badge">${item.badge}</span>` : ''}
+                    </a>
+                </li>
+            `).join('');
+            
+            // Cargar dashboard por defecto
+            setTimeout(() => loadContent('dashboard-admin'), 500);
+            
+            // Event listeners para navegación
+            document.querySelectorAll('.nav-link[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remover activo de todos los items
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    // Activar item actual
+                    this.classList.add('active');
+                    
+                    const page = this.getAttribute('data-page');
+                    loadContent(page);
+                    
+                    // Cerrar sidebar en móvil
+                    if (window.innerWidth < 992) {
+                        document.getElementById('sidebar').classList.remove('mobile-open');
+                    }
+                });
+            });
+            
+            // Manejar acciones especiales (como logout)
+            document.querySelectorAll('.nav-link[data-action]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const action = this.getAttribute('data-action');
+                    if (action === 'logout') {
+                        logout();
+                    }
+                });
+            });
+            
+            // Menú móvil
+            document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('mobile-open');
+            });
+            
+            // Busqueda global
+            let searchTimeout;
+            document.getElementById('globalSearch').addEventListener('input', function(e) {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    if (searchTerm.length > 2) {
+                        console.log('Buscando en admin:', searchTerm);
+                        // Búsqueda administrativa
+                    }
+                }, 500);
+            });
+        });
+
+        // Función global para mostrar notificaciones
+        function showNotification(message, type = 'success') {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show`;
+            alert.style.cssText = 'border-radius: 10px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1);';
+            alert.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-3 fs-5"></i>
+                    <div>${message}</div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            const contentArea = document.getElementById('content-area');
+            if (contentArea.firstChild) {
+                contentArea.insertBefore(alert, contentArea.firstChild);
+            } else {
+                contentArea.appendChild(alert);
+            }
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
