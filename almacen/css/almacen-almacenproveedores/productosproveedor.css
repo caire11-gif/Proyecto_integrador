@@ -1,0 +1,39 @@
+.prod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(25px, 3fr));
+    gap:20px;
+}
+
+.prod-card {
+    background: white;
+    border-radius: 15px;
+    padding: 15px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 3px solid transparent;
+}
+
+.prod-proveedor {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: black;
+    text-align: center;
+}
+
+.prod-categoria {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #2c3e50;
+    text-align: center;
+}
+
+.prod-producto {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    text-align: center;
+}

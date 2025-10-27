@@ -1,0 +1,142 @@
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    transition: all 0.4s ease;
+    background: #ffffff;
+    border: 1px solid rgba(255,255,255,0.2);
+    overflow: hidden;
+}
+
+.col-12 .card:hover{
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.stats-card.primary { 
+    border-left-color: #2c3e50; 
+}
+
+.stats-card.success { 
+    border-left-color: #27ae60; 
+}
+
+.stats-card.warning { 
+    border-left-color: #f39c12; 
+}
+
+.stats-card.danger { 
+    border-left-color: #e74c3c; 
+}
+
+.stats-card i {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    opacity: 0.9;
+}
+        
+.stats-card .number {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin: 10px 0;
+    color:black;
+    background: linear-gradient(135deg, var(#2c3e50), var(#2c3e50));
+}
+        
+.stats-card .label {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    font-weight: 600;
+}
+
+.stats-card {
+    padding: 25px;
+    text-align: center;
+    position: relative;
+    border-left: 4px solid;
+}
+
+/*Acciones rápidas*/
+.card-header {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    border: none;
+    padding: 20px 25px;
+    font-weight: 600;
+}
+
+.accion-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 3px solid transparent;
+}
+
+a{
+    text-decoration: none;
+}
+
+.acciones-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(25px, 1fr));
+    gap: 20px;
+}
+
+.accion-icono {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #3498db;
+    text-align: center;
+}
+
+.accion-titulo {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #2c3e50;
+    text-align: center;
+}
+
+.accion-descripcion {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.accion-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    border-color: #3498db;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+/*Notificaciones*/
+.col-xl-6 .card:hover{
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+/*Movimientos recientes*/
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #27ae60;
+}
