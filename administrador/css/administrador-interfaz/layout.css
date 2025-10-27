@@ -1,0 +1,23 @@
+.grid{
+    display:grid;
+    grid-template-areas: "principal" "secundario";
+}
+
+.principal{
+    grid-area: principal;
+}
+
+.secundario{
+    grid-area:secundario;
+    margin-left: 280px;
+    min-height: 100vh;
+    transition: all 0.3s ease;
+    padding: 30px;
+}
+
+@media(min-width:768px){
+    .grid{
+        grid-template-areas: "principal" "secundario secundario";
+        grid-template-columns: 1fr;
+    }
+}
