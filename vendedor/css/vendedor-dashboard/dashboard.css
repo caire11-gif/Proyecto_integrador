@@ -1,0 +1,9 @@
+@import url("turno-actual.css");
+@import url("acciones-rapidas.css");
+@import url("ventas-recientes.css");
+
+.contenedor-dashboard {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}

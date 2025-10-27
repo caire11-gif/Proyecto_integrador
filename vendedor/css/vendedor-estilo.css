@@ -1,0 +1,8 @@
+/*Interfaz*/
+@import url("vendedor-interfaz/interfaz.css");
+
+/*Dashboard*/
+@import url("vendedor-dashboard/dashboard.css");
+
+/*Nueva venta*/
+@import url("vendedor-nuevaventa/nuevaventa.css")
