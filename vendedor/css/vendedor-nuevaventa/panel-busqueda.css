@@ -58,6 +58,24 @@
     color: #fff;
 }
 
+/* AGREGAR ESTO PARA EL FILTRO DE PRODUCTOS DISPONIBLES */
+
+.filtro-productos {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.filtro-productos input {
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 1rem;
+}
+
 .productos-frecuentes {
-    margin-top: 10rem;
+    margin-top: 1rem; /* Reducir el margen superior */
 }
