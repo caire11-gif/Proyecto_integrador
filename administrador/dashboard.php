@@ -16,8 +16,8 @@
         echo "Un error de conexión ocurrió";
     }
 
-    $result1=pg_query($conexion,"SELECT SUM(total) AS total FROM detalleventa
-                      WHERE DATE_TRUNC('month', fecha_venta) = DATE_TRUNC('month', CURRENT_DATE)");
+    $result1=pg_query($conexion,"SELECT SUM(dv.total) AS total FROM detalleventa dv JOIN venta v ON dv.cod_venta=v.cod_venta
+                      WHERE DATE_TRUNC('month', v.fecha_venta) = DATE_TRUNC('month', CURRENT_DATE)");
     if(!$result1){
         echo "Error al sumar todas las ventas.";
     }
@@ -35,21 +35,13 @@
                     <small id="userRole">Administrador</small>
                 </div>
 
-        
-                <div class="turno-info">
-                    <div class="fw-bold">María Alvarez</div>
-                    <small>Turno: 08:00 - 16:00</small><br>
-                    <small id="tiempoActivoSidebar">0h 0m activo</small>
-                </div>
-
                 <div class="nav flex-column mt-3">
                     <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
                     <a href="kardexprincipal.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Kardex Principal</ul></a>
                     <a href="proveedores.php" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
                     <a href="controlpersonal.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Control de Personal</ul></a>
                     <a href="registroventas.php" class="nav-link"><ul><i class="fas fa-arrow-right"></i>Registro de Ventas</ul></a>
-                    <a href="configuracion.php" class="nav-link"><ul><i class="fas fa-bell"></i>Configuración</ul></a>
-                    <a href="#" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
@@ -171,7 +163,76 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Últimos Movimientos Kardex</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <div>
+                                            <div class="fw-bold">Coca Cola 3L</div>
+                                            <small class="text-muted">Venta - 15 unidades</small>
+                                        </div>
+                                        <span class="badge bg-danger">Salida</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <div>
+                                            <div class="fw-bold">Arroz Costeño</div>
+                                            <small class="text-muted">Compra - 50 cajas</small>
+                                        </div>
+                                        <span class="badge bg-success">Entrada</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <div>
+                                            <div class="fw-bold">Aceite Primor</div>
+                                            <small class="text-muted">Traslado - 24 unidades</small>
+                                        </div>
+                                        <span class="badge bg-info">Movimiento</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 mb-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Personal Activo</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <div>
+                                            <div class="fw-bold">María Alvarez</div>
+                                            <small class="text-muted">Encargado Almacén - 8.5h hoy</small>
+                                        </div>
+                                        <span class="badge bg-success">Activo</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <div>
+                                            <div class="fw-bold">Carlos Rodríguez</div>
+                                            <small class="text-muted">Vendedor - 7.2h hoy</small>
+                                        </div>
+                                        <span class="badge bg-success">Activo</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <div>
+                                        <div class="fw-bold">Ana Torres</div>
+                                            <small class="text-muted">Vendedor - Descanso</small>
+                                        </div>
+                                        <span class="badge bg-secondary">Inactivo</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>                    
+                </div>
             </div>
+        </div>
         </div>
     </div>
 </body>

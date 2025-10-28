@@ -73,8 +73,8 @@
                                     }).then(() => {
                                         window.location.href = '" . $_SERVER['PHP_SELF'] . "';
                                     });
-                            });
-                        </script>
+                                });
+                            </script>
                     ";
 
                     exit;
@@ -146,23 +146,6 @@
         }
 
         if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['accion']==='eliminar')){
-            Swal.fire({
-                title: "Estás seguro?",
-                text: "Esta acción no se puede deshacer",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Si, estoy seguro"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                    title: "Deleted!",
-                    text: "Your file has been deleted.",
-                    icon: "success"
-                    });
-                }
-            });
             $cod=$_POST['cod_proveedor'];
 
             $prodprove=pg_query_params($conexion,"SELECT cod_producto FROM producto WHERE cod_proveedor=$1",array($cod));
@@ -212,21 +195,13 @@
                     <small id="userRole">Administrador</small>
                 </div>
 
-        
-                <div class="turno-info">
-                    <div class="fw-bold">María Alvarez</div>
-                    <small>Turno: 08:00 - 16:00</small><br>
-                    <small id="tiempoActivoSidebar">0h 0m activo</small>
-                </div>
-
                 <div class="nav flex-column mt-3">
                     <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
                     <a href="kardexprincipal.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Kardex Principal</ul></a>
                     <a href="proveedores.php" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
                     <a href="controlpersonal.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Control de Personal</ul></a>
                     <a href="registroventas.php" class="nav-link"><ul><i class="fas fa-arrow-right"></i>Registro de Ventas</ul></a>
-                    <a href="configuracion.php" class="nav-link"><ul><i class="fas fa-bell"></i>Configuración</ul></a>
-                    <a href="#" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
@@ -387,9 +362,10 @@
                                                         <i class='fas fa-edit'></i>
                                                     </button>
                                             
-                                                    <form method='POST'>
+                                                    <form method='POST' id='formularioEliminar'>
+                                                        <input type='hidden' name='accion' value='eliminar'>
                                                         <input type='hidden' name='cod_proveedor' value='{$row5['cod_proveedor']}'>
-                                                        <button class='btn btn-outline-danger' title='Eliminar' name='accion' value='eliminar'>
+                                                        <button class='btn btn-outline-danger' id='eliminarProveedor' title='Eliminar' name='accion' value='eliminar'>
                                                             <i class='fas fa-trash'></i>
                                                         </button>
                                                     </form>
@@ -468,7 +444,16 @@
                 });
                 event.preventDefault();
                 return;
-            }  
+            } else if(codprove.length>10){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El código no pueder ser mayor de 10 dígitos",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            }
 
             const regexnom = /^[A-Z][a-zA-ZáéíóúÁÉÍÓÚÑñ\s]+$/;
 
@@ -596,12 +581,38 @@
                 Swal.fire({
                     icon: "warning",
                     title: "Oops...",
-                    text: "la dirección no puede estar vacío",
+                    text: "La dirección no puede estar vacío",
                     width: "350px",
                 });
                 event.preventDefault();
                 return;
             }
+        });
+
+        document.getElementById('eliminarProveedor').addEventListener('click', function () {
+            event.preventDefault();
+
+            Swal.fire({
+                title: "Estás seguro?",
+                text: "Esta acción no se puede deshacer",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Si, estoy seguro"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('formularioEliminar').submit();
+
+                    Swal.fire({
+                    title: "Eliminado",
+                    text: "Se eliminó correctamente al proveedor",
+                    icon: "success"
+                    });
+                } else {
+                    return;
+                }
+            });
         });
     </script>
 </body>
