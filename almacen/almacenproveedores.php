@@ -57,7 +57,7 @@
                     <a href="entradaproveedor.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
                     <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
                     <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
-                    <a href="#" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
@@ -96,14 +96,13 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 text-center">
                             <thead>
                                 <tr>
                                     <th>Código</th>
                                     <th>Proveedor</th>
                                     <th>Telefono</th> 
                                     <th>Dirección</th>
-                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -115,30 +114,6 @@
                                         <td><strong>$row1[nombre]</strong></td>
                                         <td><i class='fas fa-phone me-1'></i>$row1[telefono]</td>
                                         <td><i class='fas fa-map-marker me-1'></i>$row1[direccion]</td>
-                                        <td>
-                                            <div class='btn-group btn-group-sm'>
-                                                <button class='btn btn-outline-primary' title='Editar'>
-                                                    <i class='fas fa-edit'></i>
-                                                </button>
-                                                <button class='btn btn-outline-info' title='Ver Productos'>
-                                                    <i class='fas fa-boxes'></i>
-                                                </button>
-
-                                                <form method='POST'>
-                                                    <input type='hidden' name='cod_proveedor' value='{$row1['cod_proveedor']}'>
-                                                    <button class='btn btn-outline-primary' data-bs-toggle='modal' data-bs-target='#modalActualizarProveedor' tittle='Actualizar' name='accion' value='actualizar'>
-                                                        <i class='fas fa-edit'></i>
-                                                    </button>
-                                                </form>
-                                            
-                                                <form method='POST'>
-                                                    <input type='hidden' name='cod_proveedor' value='{$row1['cod_proveedor']}'>
-                                                    <button class='btn btn-outline-danger' title='Eliminar' name='accion' value='eliminar'>
-                                                        <i class='fas fa-trash'></i>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </td>
                                     </tr>";
                                 }
                                 ?>

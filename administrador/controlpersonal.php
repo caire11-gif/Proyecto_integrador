@@ -39,7 +39,12 @@
         echo "Error al seleccionar el rol.";
     }
 
-    $result4=pg_query($conexion,"SELECT u.cod_usuario AS codigo_usuario,u.cod_empleado AS codigo_empleado,u.usuario AS usuario,u.clave AS clave,eu.nombre AS 
+    $selectestusu=pg_query($conexion,"SELECT nombre FROM estadousuario");
+    if(!$selectestusu){
+        echo "Error al seleccionar el estado del usuario";
+    }
+
+    $result4=pg_query($conexion,"SELECT u.cod_usuario AS codigo_usuario,u.cod_empleado AS codigo_empleado,u.usuario AS usuario,u.contraseña AS clave,eu.nombre AS 
                       estadousuario_nombre FROM usuario u
                       JOIN estadousuario eu ON u.cod_estadousuario=eu.cod_estadousuario");
     if(!$result4){
@@ -221,7 +226,6 @@
             $codiemp=$_POST['codigoEmpleadoUsuario'] ?? '';
             $clave=$_POST['clave'] ?? '';
             $estusu=$_POST['estadoUsuario'] ?? '';
-            $codestusu='usu1';
 
             $vericodiempusu=pg_query_params($conexion, "SELECT COUNT(cod_empleado) AS cantidad_codigo_empleado_usuario FROM usuario WHERE cod_empleado=$1",array($codiemp));
             if(!$vericodiempusu){
@@ -236,15 +240,19 @@
                 echo "Error al verificar el código del usuario: ".pg_last_error($conexion);
             }
 
-            $vercodusu=pg_fetch_assoc($vericodusu);;
+            $vercodusu=pg_fetch_assoc($vericodusu);
             $vercodusu=(int)$vercodusu['cantidad_codigo_usuario'];
+
+            $vericodiestusu=pg_query_params($conexion, "SELECT cod_estadousuario FROM estadousuario WHERE nombre=$1",array($estusu));
+            if(!$vericodiestusu){
+                echo "Error al verificar el código del estado de usuario.";
+            }
+
+            $vercodestusu=pg_fetch_assoc($vericodiestusu);
+            $vercodestusu=(String)$vercodestusu['cod_estadousuario'];
 
             if($vercodiempusu===0){
                 if($vercodusu===0){
-                    if($codestusu==='usu1'){
-                        $estusu='Activo';
-                    }
-
                     $consulta=pg_query_params($conexion,"SELECT nombre,apellido FROM empleado WHERE cod_empleado=$1", array($codiemp));
                     if(!$consulta){
                         echo "Error al seleccionar el empleado para el usuario.";
@@ -265,8 +273,8 @@
                     echo $nomusu.".".$apeusu;
                     $usuario=ob_get_clean();
 
-                    $sql6="INSERT INTO usuario(cod_usuario,cod_empleado,usuario,clave,cod_estadousuario) VALUES ($1,$2,$3,$4,$5)";
-                    $result9=pg_query_params($conexion,$sql6,array($codusu,$codiemp,$usuario,$clave,$codestusu));
+                    $sql6="INSERT INTO usuario(cod_usuario,cod_empleado,usuario,contraseña,cod_estadousuario) VALUES ($1,$2,$3,$4,$5)";
+                    $result9=pg_query_params($conexion,$sql6,array($codusu,$codiemp,$usuario,$clave,$vercodestusu));
                     if(!$result9){
                         echo "Error al insertar el usuario.";
                         exit;
@@ -368,21 +376,13 @@
                     <small id="userRole">Administrador</small>
                 </div>
 
-        
-                <div class="turno-info">
-                    <div class="fw-bold">María Alvarez</div>
-                    <small>Turno: 08:00 - 16:00</small><br>
-                    <small id="tiempoActivoSidebar">0h 0m activo</small>
-                </div>
-
                 <div class="nav flex-column mt-3">
                     <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
                     <a href="kardexprincipal.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Kardex Principal</ul></a>
                     <a href="proveedores.php" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
                     <a href="controlpersonal.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Control de Personal</ul></a>
                     <a href="registroventas.php" class="nav-link"><ul><i class="fas fa-arrow-right"></i>Registro de Ventas</ul></a>
-                    <a href="configuracion.php" class="nav-link"><ul><i class="fas fa-bell"></i>Configuración</ul></a>
-                    <a href="#" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
@@ -468,8 +468,6 @@
                                 }
                             }
                             ?>
-                            
-                            
                         </div>
                     </div>
                 </div>
@@ -478,7 +476,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table id="tablaEmpleado" class="table table-hover">
+                        <table id="tablaEmpleado" class="table table-hover text-center">
                             <thead class="table-light">
                                 <tr class="text-center">
                                     <th>Código</th>
@@ -543,7 +541,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table id="tablaUsuario" class="table table-hover">
                             <thead class="table-light">
                                 <tr>
                                     <th>Código de Usuario</th>
@@ -651,7 +649,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Nuevo Empleado</h5>
+                            <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Actualizar Empleado</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
@@ -726,8 +724,21 @@
                                         <input type="text" class="form-control" id="codigoEmpleadoUsuario" name="codigoEmpleadoUsuario" readonly>
                                     </div>
                                     <div class="col-md-12">
-                                        <label class="form-label" for="clave">Clave</label>
+                                        <label class="form-label" for="clave">Contraseña</label>
                                         <input type="text" class="form-control" id="clave" name="clave" required>
+                                    </div>
+                                    <div class="col-mb-12">
+                                        <label class="form-label" for="estadoUsuario">Estado</label>
+                                        <select class="form-select" id="estadoUsuario" name="estadoUsuario" required>
+                                        <option value="">Seleccionar estado...</option>
+                                        <?php
+                                        while($selestusu=pg_fetch_assoc($selectestusu)){
+                                            echo "
+                                            <option>$selestusu[nombre]</option>
+                                            ";
+                                        }
+                                        ?>
+                                    </select>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -1041,11 +1052,15 @@
             }
         });
 
+        function cargarUsuario(codigoEmp){
+            document.getElementById("codigoEmpleadoUsuario").value=codigoEmp;
+        }
+
         document.getElementById("formularioUsuario").addEventListener("submit", function(event){
             const codusu=document.getElementById("codigoUsuario").value.trim();
             const claveusu=document.getElementById("clave").value.trim();
 
-            if(codusu===" "){
+            if(codusu===""){
                 Swal.fire({
                     icon: "warning",
                     title: "Oops...",
@@ -1065,7 +1080,7 @@
                 return;
             }
 
-            if(claveusu===" "){
+            if(claveusu===""){
                 Swal.fire({
                     icon: "warning",
                     title: "Oops...",

@@ -18,11 +18,6 @@
         }
 
         // Inicializar variables con valores por defecto
-        $cod_metodopago = 'mp001';
-        $cod_tiporeporte = 'rep001';
-        $cod_tipomovimiento = 'mov001';
-        $cod_tipoaccion = 'acc001';
-        $cod_usuario = 'user001';
         $precios_productos = array();
         $unidades_por_caja = array();
 
@@ -225,9 +220,11 @@
                             throw new Exception("Error al actualizar stock: " . pg_last_error($conexion));
                         }
                         
+                        $cantidad_final=$cantidad_unidades;
+
                         // 6. Insertar en registroinventario
-                        $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total) 
-                                           VALUES ('$cod_inventario', '$cod_usuario', '$fecha_entrada', '$cod_producto', '$cod_tipomovimiento', $cantidad_unidades, $precio_unitario, $total)";
+                        $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total, cantidad_final,total_final) 
+                                           VALUES ('$cod_inventario', '$cod_usuario', '$fecha_entrada', '$cod_producto', '$cod_tipomovimiento', $cantidad_unidades, $precio_unitario, $total,$cantidad_final,$total)";
                         
                         if(!pg_query($conexion, $query_inventario)) {
                             throw new Exception("Error al insertar en registro inventario: " . pg_last_error($conexion));
@@ -281,12 +278,6 @@
                     <small id="userRole">Encargado</small>
                 </div>
 
-                <div class="turno-info">
-                    <div class="fw-bold">María Alvarez</div>
-                    <small>Turno: 08:00 - 16:00</small><br>
-                    <small id="tiempoActivoSidebar">0h 0m activo</small>
-                </div>
-
                 <div class="nav flex-column mt-3">
                     <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
                     <a href="gestionproductos.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
@@ -294,7 +285,7 @@
                     <a href="entradaproveedor.php" class="nav-link active"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
                     <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
                     <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
-                    <a href="#" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
@@ -802,6 +793,28 @@
                 }
             }
         });
+
+        document.getElementById("formEntrada").addEventListener("submit", function(event){
+            const fechaentrada=document.getElementById("fechaEntrada").value.trim();
+
+            const hoy=new Date();
+            const fecha=new Date(fechaentrada);
+
+            hoy.setHours(0,0,0,0);
+            fecha.setHours(0,0,0,0);
+
+            if(fecha>hoy){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "La fecha no puede ser superior a la de hoy",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            }
+        });
     </script>
 </body>
 </html>
+

@@ -23,7 +23,7 @@ $result_compra = pg_query($conexion, $query_compra);
 $compra = pg_fetch_assoc($result_compra);
 
 // Obtener detalles de la compra
-$query_detalles = "SELECT dc.*, p.nombre as producto_nombre, p.unidades_por_caja, p.precio_costo
+$query_detalles = "SELECT dc.*, p.nombre as producto_nombre, p.unidades_por_caja 
                    FROM detallecompra dc 
                    JOIN producto p ON dc.cod_producto = p.cod_producto 
                    WHERE dc.cod_compra = '$cod_compra'";
@@ -56,26 +56,17 @@ echo "<thead class='table-light'>
             <th>Producto</th>
             <th>Cantidad (Cajas)</th>
             <th>Unidades por Caja</th>
-            <th>Precio de Caja (S/)</th>
             <th>Total Unidades</th>
-            <th>Precio Unitario (S/)</th>
-            <th>Total (S/)</th>
+            <th>Precio Unitario</th>
+            <th>Total</th>
         </tr>
       </thead>
       <tbody>";
 
 $total_general = 0;
 while($detalle = pg_fetch_assoc($result_detalles)) {
-    // CALCULAR PRECIO UNITARIO según la fórmula: precio_costo / unidades_por_caja
-    $precio_unitario_calculado = $detalle['precio_costo'] / $detalle['unidades_por_caja'];
-    
-    // CORRECCIÓN: Calcular total igual que en entradaproveedor.php
-    // TOTAL = Cantidad de cajas × Precio por caja
-    $total_producto = $detalle['cantidad_cajas'] * $detalle['precio_costo'];
-    
-    // Calcular total unidades
     $total_unidades = $detalle['cantidad_cajas'] * $detalle['unidades_por_caja'];
-    
+    $total_producto = $detalle['cantidad_cajas'] * $detalle['precio_unitario'];
     $total_general += $total_producto;
     
     echo "
@@ -83,10 +74,9 @@ while($detalle = pg_fetch_assoc($result_detalles)) {
         <td>{$detalle['producto_nombre']}</td>
         <td>{$detalle['cantidad_cajas']}</td>
         <td>{$detalle['unidades_por_caja']}</td>
-        <td>S/ " . number_format($detalle['precio_costo'], 2) . "</td>
         <td>{$total_unidades}</td>
-        <td>S/ " . number_format($precio_unitario_calculado, 2) . "</td>
-        <td>S/ " . number_format($total_producto, 2) . "</td>
+        <td>S/ {$detalle['precio_unitario']}</td>
+        <td>S/ {$total_producto}</td>
     </tr>
     ";
 }
@@ -94,8 +84,8 @@ while($detalle = pg_fetch_assoc($result_detalles)) {
 echo "</tbody>";
 echo "<tfoot>
         <tr class='table-active'>
-            <td colspan='6' class='text-end'><strong>Total General:</strong></td>
-            <td><strong>S/ " . number_format($total_general, 2) . "</strong></td>
+            <td colspan='5' class='text-end'><strong>Total General:</strong></td>
+            <td><strong>S/ $total_general</strong></td>
         </tr>
       </tfoot>";
 echo "</table>";

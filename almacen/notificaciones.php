@@ -198,7 +198,7 @@
                     <a href="trasladotienda.php" class="nav-link"><ul><i class="fas fa-arrow-right"></i>Traslados a Tienda</ul></a>
                     <a href="notificaciones.php" class="nav-link active"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
                     <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
-                    <a href="#" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
@@ -221,7 +221,7 @@
                     </button>
                 </div>
             </div>
-            
+            <br>
             <div class="contenido-principal">
                 <div class="container-fluid">
                     <!-- Encabezado -->

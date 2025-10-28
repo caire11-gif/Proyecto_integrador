@@ -25,13 +25,21 @@
     if(!$result2){
         echo "Error al seleccionar el tipo de movimiento.";
     }
+    
+    $codactu=$_POST['producto_codigo'] ?? '';
+    $con=pg_query_params($conexion,"SELECT 1 FROM registroinventario  WHERE cod_producto=$1 LIMIT 1",array($codactu));
+    if(!$con){
+        echo "Error al seleccionar el código del producto";
+        exit;
+    }
 
     $result7=pg_query($conexion,"SELECT ri.fecha_inventario AS fecha,p.nombre AS producto_nombre,p.cod_producto AS producto_codigo,tm.nombre AS tipomovimiento_nombre,
                                  tm.cod_tipomovimiento AS tipomovimiento_codigo,u.usuario AS usuario_nombre,ri.cantidad AS cantidad,ri.precio_unitario AS precio_unitario,
                                  ri.total AS total FROM registroinventario ri
                                  JOIN producto p ON ri.cod_producto=p.cod_producto
                                  JOIN tipomovimiento tm ON ri.cod_tipomovimiento=tm.cod_tipomovimiento
-                                 JOIN usuario u ON ri.cod_usuario=u.cod_usuario");
+                                 JOIN usuario u ON ri.cod_usuario=u.cod_usuario
+                                 ORDER BY fecha_inventario desc");
     if(!$result7){
         echo "Error al seleccionar el registro del inventario." . pg_last_error($conexion);
     }
@@ -49,21 +57,13 @@
                     <small id="userRole">Administrador</small>
                 </div>
 
-        
-                <div class="turno-info">
-                    <div class="fw-bold">María Alvarez</div>
-                    <small>Turno: 08:00 - 16:00</small><br>
-                    <small id="tiempoActivoSidebar">0h 0m activo</small>
-                </div>
-
                 <div class="nav flex-column mt-3">
                     <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
                     <a href="kardexprincipal.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Kardex Principal</ul></a>
                     <a href="proveedores.php" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
                     <a href="controlpersonal.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Control de Personal</ul></a>
                     <a href="registroventas.php" class="nav-link"><ul><i class="fas fa-arrow-right"></i>Registro de Ventas</ul></a>
-                    <a href="configuracion.php" class="nav-link"><ul><i class="fas fa-bell"></i>Configuración</ul></a>
-                    <a href="#" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
@@ -190,6 +190,7 @@
                                     <th colspan="3" class="bg-success text-white">Entradas</th>
                                     <th colspan="3" class="bg-danger text-white">Salidas</th>
                                     <th colspan="3" class="bg-primary text-white">Saldo Final</th>
+                                    <th rowspan="2" class="bg-light">Botón</th>
                                 </tr>
                                 <tr>
 
@@ -208,7 +209,7 @@
                             <tbody>
                                 <?php
                                 while($row7=pg_fetch_assoc($result7)){
-                                    if($row7['tipomovimiento_codigo']==='timo1'){
+                                    if($row7['tipomovimiento_codigo']==='mov001'){
                                         echo "
                                         <tr>
                                             <td>$row7[fecha]</td>
@@ -223,10 +224,12 @@
                                             <td>-</td>
                                             <td>-</td>
                                             <td>-</td>
-                                        </tr>
-                                        ";
-                                    } else if($row7['tipomovimiento_codigo']==='timo2'){
+                                            ";
+                                        echo "</tr>";
+                                        
+                                    } else if($row7['tipomovimiento_codigo']==='TM002'){
                                         echo "
+                                            
                                         <td>$row7[fecha]</td>
                                             <td>$row7[usuario_nombre]</td>
                                             <td>
@@ -239,12 +242,19 @@
                                             <td class='text-success fw-bold'>$row7[cantidad]</td>
                                             <td>$row7[precio_unitario]</td>
                                             <td class='fw-bold'>$row7[total]</td>
+                                            <td>
+                                                <div class='btn-group btn-group-sm gap-1'>
+                                                    <form method='POST'>
+                                                        <input type='hidden' name='cod_proveedor' value='{$row7[producto_codigo]}'>
+                                                        <button class='btn btn-outline-primary' title='Actualizar' id='actualizarRegistro' name='accion' value='actualizar'>
+                                                            <i class='fas fa-edit'></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
                                         </tr>
                                         ";
-                                    }
-                                    echo "
-                                    
-                                    ";
+                                    }               
                                 }
                                 ?>
                             </tbody>

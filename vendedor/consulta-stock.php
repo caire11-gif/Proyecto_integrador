@@ -29,14 +29,14 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
     if(!empty($filtroCategoria)) {
         $queryBusqueda .= " AND p.cod_categoria = '$filtroCategoria'";
     }
-    
+
     if($filtroStock === 'bajo') {
-        $queryBusqueda .= " AND p.stock <= 10 AND p.stock > 0";
-    } elseif($filtroStock === 'agotado') {
-        $queryBusqueda .= " AND p.stock = 0";
-    } elseif($filtroStock === 'normal') {
-        $queryBusqueda .= " AND p.stock > 10";
-    }
+    $queryBusqueda .= " AND p.stock <= 10";
+} elseif($filtroStock === 'agotado') {
+    $queryBusqueda .= " AND p.stock = 0";
+} elseif($filtroStock === 'normal') {
+    $queryBusqueda .= " AND p.stock > 10";
+}
     
     $queryBusqueda .= " ORDER BY p.nombre";
     
@@ -56,7 +56,7 @@ if($resultCategorias) {
 
 // Obtener estadísticas
 $queryTotal = "SELECT COUNT(*) as total FROM producto";
-$queryBajo = "SELECT COUNT(*) as bajo FROM producto WHERE stock <= 10 AND stock > 0";
+$queryBajo = "SELECT COUNT(*) as bajo FROM producto WHERE stock <= 10";
 $queryAgotado = "SELECT COUNT(*) as agotado FROM producto WHERE stock = 0";
 
 $resultTotal = pg_query($conexion, $queryTotal);
@@ -337,7 +337,7 @@ if(empty($resultadosBusqueda)) {
                     <a href="registrodevolucion.php" class="nav-link"><ul><i class="fas fa-undo-alt"></i>Registrar Devolución</ul></a>
                    <a href="boletas-facturas.php" class="nav-link active"><ul><i class="fas fa-receipt"></i>Boletas/Facturas</ul></a>
                     <a href="consultastock.php" class="nav-link active"><ul><i class="fas fa-boxes"></i>Consultar Stock</ul></a>
-                    <a href="../login.html" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>

@@ -1,3 +1,100 @@
+<?php
+session_start();
+
+// CONEXIÓN A LA BASE DE DATOS
+$conexion = pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
+
+if(!$conexion){
+    echo "Un error de conexión ocurrió. <br>";
+    exit;
+}
+
+// OBTENER ESTADÍSTICAS REALES DE LA BASE DE DATOS
+function obtenerEstadisticasTurno($conexion) {
+    $estadisticas = [
+        'ventas_hoy' => 0,
+        'total_vendido' => 0,
+        'productos_vendidos' => 0
+    ];
+    
+    // Ventas de hoy - CORREGIDO: calcular total desde detalleventa
+    $queryVentasHoy = "SELECT COUNT(DISTINCT v.cod_venta) as total_ventas, 
+                              COALESCE(SUM(dv.total), 0) as total_vendido 
+                      FROM venta v
+                      LEFT JOIN detalleventa dv ON v.cod_venta = dv.cod_venta
+                      WHERE DATE(v.fecha_venta) = CURRENT_DATE";
+    $resultVentasHoy = pg_query($conexion, $queryVentasHoy);
+    if($resultVentasHoy && pg_num_rows($resultVentasHoy) > 0) {
+        $row = pg_fetch_assoc($resultVentasHoy);
+        $estadisticas['ventas_hoy'] = $row['total_ventas'];
+        $estadisticas['total_vendido'] = $row['total_vendido'];
+    }
+    
+    // Productos vendidos hoy
+    $queryProductosVendidos = "SELECT COALESCE(SUM(dv.cantidad_unidades), 0) as total_productos
+                              FROM detalleventa dv
+                              JOIN venta v ON dv.cod_venta = v.cod_venta
+                              WHERE DATE(v.fecha_venta) = CURRENT_DATE";
+    $resultProductos = pg_query($conexion, $queryProductosVendidos);
+    if($resultProductos && pg_num_rows($resultProductos) > 0) {
+        $row = pg_fetch_assoc($resultProductos);
+        $estadisticas['productos_vendidos'] = $row['total_productos'];
+    }
+    
+    return $estadisticas;
+}
+
+// OBTENER VENTAS RECIENTES - CORREGIDO: calcular total desde detalleventa
+function obtenerVentasRecientes($conexion, $limite = 5) {
+    $query = "
+        SELECT 
+            v.cod_venta as id,
+            v.fecha_venta as fecha,
+            SUM(dv.total) as total,
+            v.cod_metodopago as metodo_pago,
+            COUNT(dv.cod_detalleventa) as cantidad_productos,
+            STRING_AGG(p.nombre, ', ') as productos_nombres
+        FROM venta v
+        LEFT JOIN detalleventa dv ON v.cod_venta = dv.cod_venta
+        LEFT JOIN producto p ON dv.cod_producto = p.cod_producto
+        GROUP BY v.cod_venta, v.fecha_venta, v.cod_metodopago
+        ORDER BY v.fecha_venta DESC
+        LIMIT $limite
+    ";
+    
+    $result = pg_query($conexion, $query);
+    $ventas = [];
+    
+    if($result && pg_num_rows($result) > 0) {
+        while($row = pg_fetch_assoc($result)) {
+            $ventas[] = [
+                'id' => $row['id'],
+                'fecha' => $row['fecha'],
+                'total' => $row['total'] ?: 0,
+                'metodo_pago' => $row['metodo_pago'],
+                'cantidad_productos' => $row['cantidad_productos'],
+                'productos' => $row['productos_nombres'] ?: 'Sin productos'
+            ];
+        }
+    }
+    
+    return $ventas;
+}
+
+// Obtener datos reales
+$estadisticas = obtenerEstadisticasTurno($conexion);
+$ventasRecientes = obtenerVentasRecientes($conexion);
+
+// Inicializar contadores de sesión si no existen
+if (!isset($_SESSION['inicio_turno'])) {
+    $_SESSION['inicio_turno'] = time();
+}
+
+// Calcular tiempo activo
+$tiempo_activo = time() - $_SESSION['inicio_turno'];
+$horas = floor($tiempo_activo / 3600);
+$minutos = floor(($tiempo_activo % 3600) / 60);
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -7,24 +104,201 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/vendedor-estilo.css">
+    <style>
+        /* ESTILOS MEJORADOS PARA VENTAS RECIENTES */
+        .ventas-recientes {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+
+        .ventas-recientes h3 {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 0;
+        }
+
+        .ventas-lista {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .ventas-lista::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .ventas-lista::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .ventas-lista::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+
+        .venta-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px;
+            margin-bottom: 12px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .venta-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: #007bff;
+        }
+
+        .venta-info {
+            flex: 1;
+            margin-right: 20px;
+        }
+
+        .venta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .venta-id {
+            font-size: 0.85em;
+            font-weight: 600;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            padding: 4px 10px;
+            border-radius: 6px;
+            color: white;
+        }
+
+        .venta-fecha {
+            font-size: 0.8em;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .venta-productos {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .venta-detalles {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .venta-metodo, .venta-unidades {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8em;
+            color: #6c757d;
+            background: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .venta-metodo i, .venta-unidades i {
+            font-size: 0.9em;
+        }
+
+        .venta-total {
+            font-weight: 700;
+            font-size: 1.3em;
+            color: #28a745;
+            min-width: 100px;
+            text-align: right;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid #d4edda;
+        }
+
+        .empty-ventas {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+
+        .empty-ventas i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .empty-ventas p {
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .empty-ventas small {
+            font-size: 0.9em;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f1f1;
+        }
+
+        .ventas-count {
+            background: #007bff;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        /* Estilos para métodos de pago */
+        .metodo-efectivo { color: #28a745; }
+        .metodo-tarjeta { color: #ff6b35; }
+        .metodo-transferencia { color: #6f42c1; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .venta-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+            }
+            
+            .venta-info {
+                margin-right: 0;
+            }
+            
+            .venta-total {
+                text-align: center;
+                min-width: auto;
+            }
+            
+            .venta-detalles {
+                justify-content: space-between;
+            }
+        }
+    </style>
 </head>
 <body>
-    <?php
-    session_start();
-    
-    // Inicializar contadores si no existen
-    if (!isset($_SESSION['ventas_hoy'])) {
-        $_SESSION['ventas_hoy'] = 0;
-        $_SESSION['total_vendido'] = 0;
-        $_SESSION['inicio_turno'] = time();
-    }
-    
-    // Calcular tiempo activo
-    $tiempo_activo = time() - $_SESSION['inicio_turno'];
-    $horas = floor($tiempo_activo / 3600);
-    $minutos = floor(($tiempo_activo % 3600) / 60);
-    ?>
-    
     <div class="grid">
         <main class="principal">
             <button class="boton-menu" id="mobileMenuBtn">
@@ -49,7 +323,7 @@
                     <a href="registrodevolucion.php" class="nav-link"><ul><i class="fas fa-undo-alt"></i>Registrar Devolución</ul></a>
                     <a href="boletas-facturas.php" class="nav-link"><ul><i class="fas fa-receipt"></i>Boletas/Facturas</ul></a>
                     <a href="consulta-stock.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Consulta-stock</ul></a>
-                    <a href="../login.html" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
@@ -70,7 +344,7 @@
                     <button class="btn btn-sm btn-outline-danger ms-3" onclick="cerrarTurno()">
                         <i class="fas fa-sign-out-alt me-1"></i>Cerrar Turno
                     </button>
-                    <button class="btn btn-sm btn-outline-warning ms-2" onclick="reiniciarEstadisticas()" title="Reiniciar contadores">
+                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="actualizarDashboard()" title="Actualizar datos">
                         <i class="fas fa-sync"></i>
                     </button>
                 </div>
@@ -83,15 +357,15 @@
                         <h3><i class="fas fa-chart-line"></i> Resumen Turno Actual</h3>
                         <div class="turno-stats">
                             <div class="stat">
-                                <span class="stat-value" id="ventasHoy">0</span>
+                                <span class="stat-value" id="ventasHoy"><?php echo $estadisticas['ventas_hoy']; ?></span>
                                 <span class="stat-label">Ventas Hoy</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-value" id="totalVendido">S/ 0.00</span>
+                                <span class="stat-value" id="totalVendido">S/ <?php echo number_format($estadisticas['total_vendido'], 2); ?></span>
                                 <span class="stat-label">Total Vendido</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-value" id="productosVendidos">0</span>
+                                <span class="stat-value" id="productosVendidos"><?php echo $estadisticas['productos_vendidos']; ?></span>
                                 <span class="stat-label">Productos Vendidos</span>
                             </div>
                             <div class="stat">
@@ -140,15 +414,61 @@
                     </div>
                 </section>
 
-                <!-- VENTAS RECIENTES -->
+                <!-- VENTAS RECIENTES - MEJOR ORGANIZADO -->
                 <section class="ventas-recientes">
-                    <h3><i class="fas fa-history"></i> Ventas Recientes</h3>
+                    <div class="section-header">
+                        <h3><i class="fas fa-history"></i> Ventas Recientes</h3>
+                        <span class="ventas-count"><?php echo count($ventasRecientes); ?> ventas</span>
+                    </div>
+                    
                     <div class="ventas-lista" id="listaVentasRecientes">
-                        <div class="text-center text-muted py-3">
-                            <i class="fas fa-shopping-cart fa-2x mb-2"></i>
-                            <p>No hay ventas recientes</p>
-                            <small class="text-muted">Las ventas aparecerán aquí automáticamente</small>
-                        </div>
+                        <?php if(empty($ventasRecientes)): ?>
+                            <div class="empty-ventas">
+                                <i class="fas fa-shopping-cart"></i>
+                                <p>No hay ventas hoy</p>
+                                <small>Las ventas aparecerán aquí automáticamente</small>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach($ventasRecientes as $venta): 
+                                $icono_metodo = $venta['metodo_pago'] === 'mp001' ? 'money-bill-wave' : 
+                                              ($venta['metodo_pago'] === 'mp002' ? 'credit-card' : 'mobile-alt');
+                                $clase_metodo = $venta['metodo_pago'] === 'mp001' ? 'metodo-efectivo' : 
+                                              ($venta['metodo_pago'] === 'mp002' ? 'metodo-tarjeta' : 'metodo-transferencia');
+                                $texto_metodo = $venta['metodo_pago'] === 'mp001' ? 'Efectivo' : 
+                                              ($venta['metodo_pago'] === 'mp002' ? 'Tarjeta' : 'Transferencia');
+                            ?>
+                                <div class="venta-item">
+                                    <div class="venta-info">
+                                        <div class="venta-header">
+                                            <span class="venta-id">#<?php echo $venta['id']; ?></span>
+                                            <span class="venta-fecha">
+                                                <?php echo date('H:i', strtotime($venta['fecha'])); ?> - 
+                                                <?php echo date('d/m', strtotime($venta['fecha'])); ?>
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="venta-productos" title="<?php echo htmlspecialchars($venta['productos']); ?>">
+                                            <?php echo htmlspecialchars($venta['productos']); ?>
+                                        </div>
+                                        
+                                        <div class="venta-detalles">
+                                            <span class="venta-metodo <?php echo $clase_metodo; ?>">
+                                                <i class="fas fa-<?php echo $icono_metodo; ?>"></i>
+                                                <?php echo $texto_metodo; ?>
+                                            </span>
+                                            <span class="venta-unidades">
+                                                <i class="fas fa-box"></i>
+                                                <?php echo $venta['cantidad_productos']; ?> unidades
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="venta-total">
+                                        S/ <?php echo number_format($venta['total'], 2); ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 </section>
             </div>
@@ -157,106 +477,6 @@
 
     <script>
         // ===== SISTEMA DE ACTUALIZACIÓN DEL DASHBOARD =====
-        
-        // Cargar y mostrar estadísticas del turno desde localStorage
-        function cargarEstadisticasTurno() {
-            try {
-                const estadisticasTurno = JSON.parse(localStorage.getItem('estadisticasTurno') || '{"ventasHoy": 0, "totalVendido": 0, "productosVendidos": 0}');
-                
-                console.log('📊 Cargando estadísticas:', estadisticasTurno);
-                
-                // Actualizar los contadores en el dashboard
-                document.getElementById('ventasHoy').textContent = estadisticasTurno.ventasHoy || 0;
-                document.getElementById('totalVendido').textContent = 'S/ ' + (estadisticasTurno.totalVendido || 0).toFixed(2);
-                document.getElementById('productosVendidos').textContent = estadisticasTurno.productosVendidos || 0;
-                
-                // Actualizar última venta si existe
-                if (estadisticasTurno.ultimaVenta) {
-                    console.log('🕒 Última venta:', estadisticasTurno.ultimaVenta);
-                }
-                
-            } catch (error) {
-                console.error('❌ Error al cargar estadísticas:', error);
-                // Inicializar valores por defecto
-                document.getElementById('ventasHoy').textContent = '0';
-                document.getElementById('totalVendido').textContent = 'S/ 0.00';
-                document.getElementById('productosVendidos').textContent = '0';
-            }
-        }
-        
-        // Cargar ventas recientes desde localStorage
-        function cargarVentasRecientes() {
-            try {
-                const ventasRecientes = JSON.parse(localStorage.getItem('ventasRecientes') || '[]');
-                const lista = document.getElementById('listaVentasRecientes');
-                
-                console.log('📋 Cargando ventas recientes:', ventasRecientes);
-                
-                if (ventasRecientes.length === 0) {
-                    lista.innerHTML = `
-                        <div class="text-center text-muted py-3">
-                            <i class="fas fa-shopping-cart fa-2x mb-2"></i>
-                            <p>No hay ventas recientes</p>
-                            <small class="text-muted">Las ventas aparecerán aquí automáticamente</small>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                let html = '';
-                ventasRecientes.slice(0, 5).forEach(venta => {
-                    // Formatear fecha de manera más legible
-                    const fecha = new Date(venta.fecha);
-                    const fechaFormateada = fecha.toLocaleDateString('es-PE', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                    
-                    // Determinar icono según método de pago
-                    const iconoPago = venta.metodo_pago === 'EFE' ? 'money-bill-wave' : 
-                                    venta.metodo_pago === 'TAR' ? 'credit-card' : 'mobile-alt';
-                    
-                    html += `
-                        <div class="venta-item">
-                            <div class="venta-info">
-                                <div class="d-flex justify-content-between align-items-start mb-1">
-                                    <span class="venta-id badge bg-primary">#${venta.id}</span>
-                                    <small class="text-muted">${fechaFormateada}</small>
-                                </div>
-                                <div class="venta-productos text-truncate mb-1">${venta.productos}</div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-${iconoPago} me-1"></i>
-                                        ${venta.metodo_pago === 'EFE' ? 'Efectivo' : 
-                                          venta.metodo_pago === 'TAR' ? 'Tarjeta' : 'Transferencia'}
-                                    </small>
-                                    <small class="text-muted">
-                                        <i class="fas fa-box me-1"></i>
-                                        ${venta.cantidad_productos || 0} unidades
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="venta-total text-success fw-bold fs-5">S/ ${parseFloat(venta.total).toFixed(2)}</div>
-                        </div>
-                    `;
-                });
-                
-                lista.innerHTML = html;
-                
-            } catch (error) {
-                console.error('❌ Error al cargar ventas recientes:', error);
-                const lista = document.getElementById('listaVentasRecientes');
-                lista.innerHTML = `
-                    <div class="text-center text-danger py-3">
-                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                        <p>Error al cargar ventas</p>
-                    </div>
-                `;
-            }
-        }
         
         // Actualizar tiempo en tiempo real
         function actualizarTiempo() {
@@ -270,81 +490,54 @@
             document.getElementById('tiempoActivoSidebar').textContent = horas + 'h ' + minutos + 'm activo';
         }
         
-        // Escuchar actualizaciones en tiempo real desde otras pestañas
-        function configurarActualizacionesTiempoReal() {
-            // Método 1: Usar BroadcastChannel (más eficiente)
-            if (typeof BroadcastChannel !== 'undefined') {
-                try {
-                    const channel = new BroadcastChannel('dashboard_updates');
-                    channel.addEventListener('message', function(event) {
-                        if (event.data.type === 'venta_registrada') {
-                            console.log('🔄 Actualización recibida via BroadcastChannel:', event.data);
-                            cargarEstadisticasTurno();
-                            cargarVentasRecientes();
-                        }
-                    });
-                    console.log('📡 BroadcastChannel configurado');
-                } catch (e) {
-                    console.log('❌ BroadcastChannel no disponible');
-                }
-            }
+        // Función para actualizar el dashboard
+        function actualizarDashboard() {
+            // Mostrar indicador de carga
+            const btnActualizar = event.target;
+            const iconoOriginal = btnActualizar.innerHTML;
+            btnActualizar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btnActualizar.disabled = true;
             
-            // Método 2: Verificar cambios en localStorage cada 2 segundos (fallback)
-            setInterval(function() {
-                cargarEstadisticasTurno();
-                cargarVentasRecientes();
-            }, 2000);
-            
-            console.log('🔄 Sistema de actualización configurado');
-        }
-        
-        // Función para reiniciar estadísticas
-        function reiniciarEstadisticas() {
-            if(confirm('¿Estás seguro de que deseas reiniciar los contadores de ventas? Esto no afecta las ventas ya registradas.')) {
-                const estadisticasReset = {
-                    ventasHoy: 0,
-                    totalVendido: 0,
-                    productosVendidos: 0,
-                    ultimaActualizacion: new Date().toISOString()
-                };
-                localStorage.setItem('estadisticasTurno', JSON.stringify(estadisticasReset));
-                cargarEstadisticasTurno();
-                alert('✅ Contadores reiniciados correctamente');
-            }
+            // Recargar la página después de un breve delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         }
         
         // Función para cerrar turno
         function cerrarTurno() {
-            if(confirm('¿Estás seguro de que deseas cerrar el turno? Se reiniciarán las estadísticas.')) {
-                // Limpiar localStorage
-                localStorage.removeItem('ventasRecientes');
-                localStorage.removeItem('estadisticasTurno');
-                
-                // Redirigir para reiniciar sesión
-                window.location.href = 'cerrar_turno.php';
+            if(confirm('¿Estás seguro de que deseas cerrar el turno?')) {
+                window.location.href = '../login.html';
             }
         }
         
         // Función para buscar globalmente
         function configurarBusquedaGlobal() {
             const busquedaInput = document.getElementById('globalSearch');
-            busquedaInput.addEventListener('input', function() {
-                const termino = this.value.toLowerCase();
-                // Aquí puedes implementar búsqueda global
-                console.log('Buscando:', termino);
+            busquedaInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const termino = this.value.trim();
+                    if (termino) {
+                        // Redirigir a búsqueda en productos
+                        window.location.href = `consulta-stock.php?buscar=${encodeURIComponent(termino)}`;
+                    }
+                }
             });
+        }
+        
+        // Auto-actualización cada 30 segundos
+        function iniciarAutoActualizacion() {
+            setInterval(() => {
+                // Solo actualizar si la página está visible
+                if (!document.hidden) {
+                    window.location.reload();
+                }
+            }, 30000); // 30 segundos
         }
         
         // Inicializar dashboard
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard...');
-            
-            // Cargar datos iniciales
-            cargarEstadisticasTurno();
-            cargarVentasRecientes();
-            
-            // Configurar actualizaciones en tiempo real
-            configurarActualizacionesTiempoReal();
+            console.log('🚀 Dashboard inicializado con datos reales de BD');
             
             // Configurar búsqueda global
             configurarBusquedaGlobal();
@@ -352,23 +545,11 @@
             // Actualizar tiempo cada minuto
             setInterval(actualizarTiempo, 60000);
             
-            // Mostrar estado inicial
-            console.log('✅ Dashboard inicializado correctamente');
+            // Iniciar auto-actualización
+            iniciarAutoActualizacion();
             
-            // Forzar una actualización inicial
-            setTimeout(() => {
-                cargarEstadisticasTurno();
-                cargarVentasRecientes();
-            }, 1000);
-        });
-
-        // También escuchar eventos de almacenamiento (para actualizaciones entre pestañas)
-        window.addEventListener('storage', function(event) {
-            if (event.key === 'estadisticasTurno' || event.key === 'ventasRecientes') {
-                console.log('🔄 Evento de almacenamiento detectado:', event.key);
-                cargarEstadisticasTurno();
-                cargarVentasRecientes();
-            }
+            // Mostrar notificación de actualización automática
+            console.log('🔄 Dashboard se actualizará automáticamente cada 30 segundos');
         });
     </script>
 
