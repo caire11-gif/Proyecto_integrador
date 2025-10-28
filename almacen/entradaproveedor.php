@@ -158,7 +158,11 @@
                     if(!empty($cod_producto)) {
                         $cantidad_cajas = intval($cantidades[$index]);
                         $precio_unitario = floatval($precios[$index]);
-                        $total = $cantidad_cajas * $precio_unitario;
+                        
+                        // CORRECCIÓN: Calcular total basado en UNIDADES, no cajas
+                        $unidades_por_caja_producto = $unidades_por_caja[$cod_producto];
+                        $cantidad_unidades = $cantidad_cajas * $unidades_por_caja_producto;
+                        $total = $cantidad_unidades * $precio_unitario;
                         
                         // Validar datos del producto
                         if($cantidad_cajas <= 0) {
@@ -175,6 +179,7 @@
                         $cod_historial = generarCodigo('HIS' . $index);
                         
                         // 4. Insertar en detallecompra (con el MISMO cod_compra para todos)
+                        // CORRECCIÓN: Guardar el total calculado correctamente
                         $query_detalle = "INSERT INTO detallecompra (cod_detallecompra, cod_compra, cod_producto, cantidad_cajas, precio_unitario, total) 
                                          VALUES ('$cod_detallecompra', '$cod_compra', '$cod_producto', $cantidad_cajas, $precio_unitario, $total)";
                         
@@ -191,15 +196,16 @@
                         }
                         
                         // 6. Insertar en registroinventario
+                        // CORRECCIÓN: Usar cantidad_unidades en lugar de cantidad_cajas
                         $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total) 
-                                           VALUES ('$cod_inventario', '$cod_usuario', '$fecha_entrada', '$cod_producto', '$cod_tipomovimiento', $unidades_agregadas, $precio_unitario, $total)";
+                                           VALUES ('$cod_inventario', '$cod_usuario', '$fecha_entrada', '$cod_producto', '$cod_tipomovimiento', $cantidad_unidades, $precio_unitario, $total)";
                         
                         if(!pg_query($conexion, $query_inventario)) {
                             throw new Exception("Error al insertar en registro inventario: " . pg_last_error($conexion));
                         }
                         
                         // 7. Insertar en movimiento
-                        $observacion = "Entrada de proveedor - Compra: $cod_compra";
+                        $observacion = "Entrada de proveedor - Compra: $cod_compra - $cantidad_cajas cajas ($unidades_agregadas unidades)";
                         $query_movimiento = "INSERT INTO movimiento (cod_movimiento, cod_producto, cod_tipomovimiento, fecha_movimiento, cod_usuario, observacion) 
                                            VALUES ('$cod_movimiento', '$cod_producto', '$cod_tipomovimiento', '$fecha_entrada', '$cod_usuario', '$observacion')";
                         
@@ -208,7 +214,7 @@
                         }
                         
                         // 8. Insertar en historialproductos
-                        $observacion_historial = "Entrada de $cantidad_cajas cajas ($unidades_agregadas unidades) - Compra: $cod_compra";
+                        $observacion_historial = "Entrada de $cantidad_cajas cajas ($unidades_agregadas unidades) - Compra: $cod_compra - Total: S/ $total";
                         $query_historial = "INSERT INTO historialproductos (cod_historialproductos, cod_usuario, cod_producto, cod_tipoaccion, observacion) 
                                           VALUES ('$cod_historial', '$cod_usuario', '$cod_producto', '$cod_tipoaccion', '$observacion_historial')";
                         
@@ -257,7 +263,6 @@
                     <a href="gestionproductos.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
                     <a href="almacenproveedores.php" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
                     <a href="entradaproveedor.php" class="nav-link active"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
-                    <a href="trasladotienda.php" class="nav-link"><ul><i class="fas fa-arrow-right"></i>Traslados a Tienda</ul></a>
                     <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
                     <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
                     <a href="#" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
@@ -367,10 +372,12 @@
                                             <table class="table table-bordered">
                                                 <thead class="table-light">
                                                     <tr>
-                                                        <th width="35%">Producto</th>
-                                                        <th width="15%">Cantidad (Cajas)</th>
-                                                        <th width="15%">Precio Unitario (S/)</th>
-                                                        <th width="15%">Total (S/)</th>
+                                                        <th width="30%">Producto</th>
+                                                        <th width="12%">Cantidad (Cajas)</th>
+                                                        <th width="12%">Unidades x Caja</th>
+                                                        <th width="12%">Total Unidades</th>
+                                                        <th width="12%">Precio Unitario (S/)</th>
+                                                        <th width="12%">Total (S/)</th>
                                                         <th width="10%">Acción</th>
                                                     </tr>
                                                 </thead>
@@ -392,6 +399,8 @@
                                                         <td>
                                                             <input type="number" class="form-control cantidad-input" name="cantidades[]" value="1" min="1" required onchange="calcularTotalFila(this)">
                                                         </td>
+                                                        <td class="unidades-caja text-center">0</td>
+                                                        <td class="total-unidades text-center">0</td>
                                                         <td>
                                                             <input type="number" class="form-control precio-input" name="precios[]" value="0.00" step="0.01" min="0" required onchange="calcularTotalFila(this)">
                                                         </td>
@@ -405,14 +414,14 @@
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
-                                                        <td colspan="5" class="text-end">
+                                                        <td colspan="7" class="text-end">
                                                             <button type="button" class="btn btn-sm btn-outline-primary" onclick="agregarFila()">
                                                                 <i class="fas fa-plus me-1"></i>Agregar Producto
                                                             </button>
                                                         </td>
                                                     </tr>
                                                     <tr class="table-active total-row">
-                                                        <td colspan="3" class="text-end"><strong>Total General:</strong></td>
+                                                        <td colspan="5" class="text-end"><strong>Total General:</strong></td>
                                                         <td colspan="2"><strong id="totalGeneral">S/ 0.00</strong></td>
                                                     </tr>
                                                 </tfoot>
@@ -547,22 +556,35 @@
             const productoId = selectElement.value;
             const row = selectElement.closest('tr');
             const precioInput = row.querySelector('.precio-input');
+            const unidadesCell = row.querySelector('.unidades-caja');
             
             if (productoId && preciosProductos[productoId]) {
                 precioInput.value = parseFloat(preciosProductos[productoId]).toFixed(2);
+                unidadesCell.textContent = unidadesPorCaja[productoId] || 0;
                 calcularTotalFila(selectElement);
             } else {
                 precioInput.value = '0.00';
+                unidadesCell.textContent = '0';
+                row.querySelector('.total-unidades').textContent = '0';
                 row.querySelector('.total-producto').textContent = 'S/ 0.00';
             }
         }
 
         function calcularTotalFila(inputElement) {
             const row = inputElement.closest('tr');
-            const cantidad = parseFloat(row.querySelector('.cantidad-input').value) || 0;
+            const cantidadCajas = parseFloat(row.querySelector('.cantidad-input').value) || 0;
             const precio = parseFloat(row.querySelector('.precio-input').value) || 0;
-            const total = cantidad * precio;
+            const productoSelect = row.querySelector('.product-select');
+            const productoId = productoSelect.value;
+            const totalUnidadesCell = row.querySelector('.total-unidades');
             
+            // CORRECCIÓN: Calcular total basado en UNIDADES, no cajas
+            const unidadesPorCajaProducto = unidadesPorCaja[productoId] || 1;
+            const cantidadUnidades = cantidadCajas * unidadesPorCajaProducto;
+            const total = cantidadUnidades * precio;
+            
+            // Actualizar todas las celdas
+            totalUnidadesCell.textContent = cantidadUnidades;
             row.querySelector('.total-producto').textContent = 'S/ ' + total.toFixed(2);
             calcularTotalGeneral();
         }
@@ -599,6 +621,8 @@
                 <td>
                     <input type="number" class="form-control cantidad-input" name="cantidades[]" value="1" min="1" required onchange="calcularTotalFila(this)">
                 </td>
+                <td class="unidades-caja text-center">0</td>
+                <td class="total-unidades text-center">0</td>
                 <td>
                     <input type="number" class="form-control precio-input" name="precios[]" value="0.00" step="0.01" min="0" required onchange="calcularTotalFila(this)">
                 </td>
@@ -634,6 +658,8 @@
             // Resetear totales
             document.querySelectorAll('.product-row').forEach(row => {
                 row.querySelector('.total-producto').textContent = 'S/ 0.00';
+                row.querySelector('.unidades-caja').textContent = '0';
+                row.querySelector('.total-unidades').textContent = '0';
             });
             document.getElementById('totalGeneral').textContent = 'S/ 0.00';
             actualizarContadorProductos();
@@ -672,6 +698,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             actualizarContadorProductos();
             calcularTotalGeneral();
+            
+            // Cargar precios iniciales para la primera fila
+            const primeraFila = document.querySelector('.product-row');
+            if (primeraFila) {
+                cargarPrecioProducto(primeraFila.querySelector('.product-select'));
+            }
         });
     </script>
 </body>

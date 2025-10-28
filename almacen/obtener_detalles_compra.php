@@ -65,8 +65,9 @@ echo "<thead class='table-light'>
 
 $total_general = 0;
 while($detalle = pg_fetch_assoc($result_detalles)) {
+    // CORRECCIÓN: Calcular correctamente el total basado en unidades
     $total_unidades = $detalle['cantidad_cajas'] * $detalle['unidades_por_caja'];
-    $total_producto = $detalle['cantidad_cajas'] * $detalle['precio_unitario'];
+    $total_producto = $total_unidades * $detalle['precio_unitario'];
     $total_general += $total_producto;
     
     echo "
@@ -76,7 +77,7 @@ while($detalle = pg_fetch_assoc($result_detalles)) {
         <td>{$detalle['unidades_por_caja']}</td>
         <td>{$total_unidades}</td>
         <td>S/ {$detalle['precio_unitario']}</td>
-        <td>S/ {$total_producto}</td>
+        <td>S/ " . number_format($total_producto, 2) . "</td>
     </tr>
     ";
 }
@@ -85,7 +86,7 @@ echo "</tbody>";
 echo "<tfoot>
         <tr class='table-active'>
             <td colspan='5' class='text-end'><strong>Total General:</strong></td>
-            <td><strong>S/ $total_general</strong></td>
+            <td><strong>S/ " . number_format($total_general, 2) . "</strong></td>
         </tr>
       </tfoot>";
 echo "</table>";
