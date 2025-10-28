@@ -26,6 +26,11 @@
         $precios_productos = array();
         $unidades_por_caja = array();
 
+        // Obtener parámetro de filtro si existe
+        $filtro = $_GET['filtro'] ?? 'todos';
+        $busqueda = $_GET['busqueda'] ?? '';
+        $tab_activa = $_GET['tab'] ?? 'nuevaEntrada'; // Nueva variable para controlar la pestaña activa
+
         try {
             // Obtener datos para los select (con manejo de errores individual)
             $result1 = pg_query($conexion, "SELECT cod_proveedor, nombre FROM proveedor");
@@ -38,12 +43,12 @@
                 error_log("Error al cargar tipos de documento: " . pg_last_error($conexion));
             }
 
-            // Obtener productos CON PRECIO DE COSTO
+            // Obtener productos CON PRECIO DE COSTO (precio por caja)
             $result3 = pg_query($conexion, "SELECT cod_producto, nombre, precio_costo, unidades_por_caja FROM producto");
             if(!$result3){
                 error_log("Error al cargar productos: " . pg_last_error($conexion));
             } else {
-                // Crear array con precios de productos
+                // Crear array con precios de productos (precio por caja)
                 pg_result_seek($result3, 0);
                 while($row = pg_fetch_assoc($result3)){
                     $precios_productos[$row['cod_producto']] = $row['precio_costo'];
@@ -87,8 +92,8 @@
                 $cod_usuario = $row['cod_usuario'];
             }
 
-            // CONSULTA para historial - COMPRAS AGRUPADAS
-            $result4 = pg_query($conexion, "SELECT 
+            // CONSULTA para historial - COMPRAS AGRUPADAS con filtros
+            $query_historial = "SELECT 
                                 c.cod_compra,
                                 c.fecha_compra AS fecha,
                                 pr.nombre AS proveedor_nombre,
@@ -101,8 +106,29 @@
                             JOIN usuario u ON c.cod_usuario = u.cod_usuario
                             JOIN metodopago mp ON c.cod_metodopago = mp.cod_metodopago
                             LEFT JOIN detallecompra dc ON c.cod_compra = dc.cod_compra
-                            GROUP BY c.cod_compra, c.fecha_compra, pr.nombre, u.usuario, mp.nombre
-                            ORDER BY c.fecha_compra DESC");
+                            WHERE 1=1";
+
+            // Aplicar filtros
+            if ($filtro === 'hoy') {
+                $query_historial .= " AND c.fecha_compra = CURRENT_DATE";
+            } elseif ($filtro === 'semana') {
+                $query_historial .= " AND c.fecha_compra >= DATE_TRUNC('week', CURRENT_DATE)";
+            } elseif ($filtro === 'mes') {
+                $query_historial .= " AND c.fecha_compra >= DATE_TRUNC('month', CURRENT_DATE)";
+            }
+
+            // Aplicar búsqueda
+            if (!empty($busqueda)) {
+                $busqueda_like = pg_escape_string($busqueda);
+                $query_historial .= " AND (c.cod_compra ILIKE '%$busqueda_like%' 
+                                         OR pr.nombre ILIKE '%$busqueda_like%'
+                                         OR u.usuario ILIKE '%$busqueda_like%')";
+            }
+
+            $query_historial .= " GROUP BY c.cod_compra, c.fecha_compra, pr.nombre, u.usuario, mp.nombre
+                                 ORDER BY c.fecha_compra DESC";
+
+            $result4 = pg_query($conexion, $query_historial);
             
             if(!$result4){
                 error_log("Error al cargar historial: " . pg_last_error($conexion));
@@ -131,7 +157,7 @@
                 $tipo_comprobante = $_POST['tipo_comprobante'] ?? '';
                 $productos = $_POST['productos'] ?? [];
                 $cantidades = $_POST['cantidades'] ?? [];
-                $precios = $_POST['precios'] ?? [];
+                $precios_caja = $_POST['precios_caja'] ?? []; // Cambiado a precios_caja
                 
                 // Validar datos requeridos
                 if(empty($proveedor) || empty($fecha_entrada)) {
@@ -157,10 +183,14 @@
                 foreach($productos as $index => $cod_producto) {
                     if(!empty($cod_producto)) {
                         $cantidad_cajas = intval($cantidades[$index]);
-                        $precio_unitario = floatval($precios[$index]);
+                        $precio_por_caja = floatval($precios_caja[$index]); // Precio por caja
                         
-                        // CORRECCIÓN: Calcular total basado en UNIDADES, no cajas
+                        // CALCULAR PRECIO UNITARIO según la fórmula: (cantidad_cajas * precio_por_caja) / (cantidad_cajas * unidades_por_caja)
+                        // Simplificado: precio_por_caja / unidades_por_caja
                         $unidades_por_caja_producto = $unidades_por_caja[$cod_producto];
+                        $precio_unitario = $precio_por_caja / $unidades_por_caja_producto;
+                        
+                        // Calcular total basado en unidades
                         $cantidad_unidades = $cantidad_cajas * $unidades_por_caja_producto;
                         $total = $cantidad_unidades * $precio_unitario;
                         
@@ -168,8 +198,8 @@
                         if($cantidad_cajas <= 0) {
                             throw new Exception("La cantidad debe ser mayor a 0");
                         }
-                        if($precio_unitario < 0) {
-                            throw new Exception("El precio no puede ser negativo");
+                        if($precio_por_caja < 0) {
+                            throw new Exception("El precio por caja no puede ser negativo");
                         }
 
                         // Generar código único para cada detalle
@@ -179,7 +209,7 @@
                         $cod_historial = generarCodigo('HIS' . $index);
                         
                         // 4. Insertar en detallecompra (con el MISMO cod_compra para todos)
-                        // CORRECCIÓN: Guardar el total calculado correctamente
+                        // GUARDAR el precio_unitario calculado en detallecompra
                         $query_detalle = "INSERT INTO detallecompra (cod_detallecompra, cod_compra, cod_producto, cantidad_cajas, precio_unitario, total) 
                                          VALUES ('$cod_detallecompra', '$cod_compra', '$cod_producto', $cantidad_cajas, $precio_unitario, $total)";
                         
@@ -196,7 +226,6 @@
                         }
                         
                         // 6. Insertar en registroinventario
-                        // CORRECCIÓN: Usar cantidad_unidades en lugar de cantidad_cajas
                         $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total) 
                                            VALUES ('$cod_inventario', '$cod_usuario', '$fecha_entrada', '$cod_producto', '$cod_tipomovimiento', $cantidad_unidades, $precio_unitario, $total)";
                         
@@ -307,25 +336,26 @@
 
                 <ul class="nav nav-tabs mb-4" id="entradasTabs">
                     <li class="nav-item">
-                        <a class="nav-link active" data-bs-toggle="tab" href="#nuevaEntrada" style="color:black">
+                        <a class="nav-link <?php echo $tab_activa === 'nuevaEntrada' ? 'active' : ''; ?>" data-bs-toggle="tab" href="#nuevaEntrada" style="color:black" onclick="cambiarTab('nuevaEntrada')">
                             <i class="fas fa-plus-circle me-1"></i>Nueva Entrada
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" href="#historialEntradas" style="color:black">
+                        <a class="nav-link <?php echo $tab_activa === 'historialEntradas' ? 'active' : ''; ?>" data-bs-toggle="tab" href="#historialEntradas" style="color:black" onclick="cambiarTab('historialEntradas')">
                             <i class="fas fa-history me-1"></i>Historial
                         </a>
                     </li>
                 </ul>
 
                 <div class="tab-content">
-                    <div class="tab-pane fade show active" id="nuevaEntrada">
+                    <div class="tab-pane fade <?php echo $tab_activa === 'nuevaEntrada' ? 'show active' : ''; ?>" id="nuevaEntrada">
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Registrar Nueva Entrada</h5>
                             </div>
                             <div class="card-body">
                                 <form id="formEntrada" method="POST">
+                                    <input type="hidden" name="tab" value="nuevaEntrada">
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label">Proveedor: <span class="text-danger">*</span></label>
@@ -372,12 +402,12 @@
                                             <table class="table table-bordered">
                                                 <thead class="table-light">
                                                     <tr>
-                                                        <th width="30%">Producto</th>
-                                                        <th width="12%">Cantidad (Cajas)</th>
-                                                        <th width="12%">Unidades x Caja</th>
-                                                        <th width="12%">Total Unidades</th>
-                                                        <th width="12%">Precio Unitario (S/)</th>
-                                                        <th width="12%">Total (S/)</th>
+                                                        <th width="25%">Producto</th>
+                                                        <th width="10%">Cantidad (Cajas)</th>
+                                                        <th width="10%">Unidades x Caja</th>
+                                                        <th width="10%">Total Unidades</th>
+                                                        <th width="15%">Precio por Caja (S/)</th>
+                                                        <th width="15%">Total (S/)</th>
                                                         <th width="10%">Acción</th>
                                                     </tr>
                                                 </thead>
@@ -402,7 +432,7 @@
                                                         <td class="unidades-caja text-center">0</td>
                                                         <td class="total-unidades text-center">0</td>
                                                         <td>
-                                                            <input type="number" class="form-control precio-input" name="precios[]" value="0.00" step="0.01" min="0" required onchange="calcularTotalFila(this)">
+                                                            <input type="number" class="form-control precio-caja-input" name="precios_caja[]" value="0.00" step="0.01" min="0" required onchange="calcularTotalFila(this)">
                                                         </td>
                                                         <td class="total-producto">S/ 0.00</td>
                                                         <td>
@@ -440,25 +470,41 @@
                         </div>
                     </div>
     
-                    <div class="tab-pane fade" id="historialEntradas">
+                    <div class="tab-pane fade <?php echo $tab_activa === 'historialEntradas' ? 'show active' : ''; ?>" id="historialEntradas">
                         <div class="card">
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="fas fa-history me-2"></i>Historial de Entradas</h5>
                                     <div class="d-flex">
-                                        <div class="search-box me-2">
-                                            <i class="fas fa-search"></i>
-                                            <input type="text" class="form-control" placeholder="Buscar compras..." id="buscarHistorial">
-                                        </div>
+                                        <form method="GET" class="d-flex me-2" id="formBusqueda">
+                                            <input type="hidden" name="tab" value="historialEntradas">
+                                            <div class="search-box me-2 position-relative">
+                                                <i class="fas fa-search position-absolute" style="left: 10px; top: 50%; transform: translateY(-50%); z-index: 10;"></i>
+                                                <input type="text" class="form-control ps-4" placeholder="Buscar compras..." id="buscarHistorial" name="busqueda" value="<?php echo htmlspecialchars($busqueda); ?>">
+                                                <input type="hidden" name="filtro" value="<?php echo htmlspecialchars($filtro); ?>">
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-search me-1"></i>Buscar
+                                            </button>
+                                        </form>
                                         <div class="dropdown">
                                             <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="fas fa-filter me-1"></i>Filtrar
+                                                <i class="fas fa-filter me-1"></i>
+                                                <?php 
+                                                $nombres_filtros = [
+                                                    'todos' => 'Todos',
+                                                    'hoy' => 'Hoy', 
+                                                    'semana' => 'Esta semana',
+                                                    'mes' => 'Este mes'
+                                                ];
+                                                echo $nombres_filtros[$filtro] ?? 'Filtrar';
+                                                ?>
                                             </button>
                                             <ul class="dropdown-menu filter-dropdown" aria-labelledby="filterDropdown">
-                                                <li><a class="dropdown-item" href="#" onclick="filtrarHistorial('todos')">Todos</a></li>
-                                                <li><a class="dropdown-item" href="#" onclick="filtrarHistorial('hoy')">Hoy</a></li>
-                                                <li><a class="dropdown-item" href="#" onclick="filtrarHistorial('semana')">Esta semana</a></li>
-                                                <li><a class="dropdown-item" href="#" onclick="filtrarHistorial('mes')">Este mes</a></li>
+                                                <li><a class="dropdown-item <?php echo $filtro === 'todos' ? 'active' : ''; ?>" href="#" onclick="aplicarFiltro('todos')">Todos</a></li>
+                                                <li><a class="dropdown-item <?php echo $filtro === 'hoy' ? 'active' : ''; ?>" href="#" onclick="aplicarFiltro('hoy')">Hoy</a></li>
+                                                <li><a class="dropdown-item <?php echo $filtro === 'semana' ? 'active' : ''; ?>" href="#" onclick="aplicarFiltro('semana')">Esta semana</a></li>
+                                                <li><a class="dropdown-item <?php echo $filtro === 'mes' ? 'active' : ''; ?>" href="#" onclick="aplicarFiltro('mes')">Este mes</a></li>
                                             </ul>
                                         </div>
                                     </div>
@@ -482,14 +528,16 @@
                                         <tbody>
                                             <?php
                                             if($result4 && pg_num_rows($result4) > 0) {
+                                                $total_compras = 0;
                                                 while($row4 = pg_fetch_assoc($result4)){
+                                                    $total_compras++;
                                                     echo "
                                                     <tr>
                                                         <td><strong>{$row4['cod_compra']}</strong></td>
                                                         <td>{$row4['fecha']}</td>
                                                         <td>{$row4['proveedor_nombre']}</td>
                                                         <td><span class='badge bg-info'>{$row4['total_productos']} productos</span></td>
-                                                        <td><strong>S/ {$row4['total_compra']}</strong></td>
+                                                        <td><strong>S/ " . number_format($row4['total_compra'], 2) . "</strong></td>
                                                         <td>{$row4['metodo_pago']}</td>
                                                         <td>{$row4['usuario_registro']}</td>
                                                         <td>
@@ -504,7 +552,10 @@
                                                     ";
                                                 }
                                             } else {
-                                                echo "<tr><td colspan='8' class='text-center'>No hay compras registradas</td></tr>";
+                                                echo "<tr><td colspan='8' class='text-center py-4'>No hay compras registradas " . 
+                                                     (!empty($busqueda) ? "para la búsqueda '" . htmlspecialchars($busqueda) . "'" : "") . 
+                                                     ($filtro !== 'todos' ? " en el período seleccionado" : "") . 
+                                                     "</td></tr>";
                                             }
                                             ?>
                                         </tbody>
@@ -514,8 +565,15 @@
                             <div class="card-footer">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <strong>Historial de Compras</strong>
+                                        <strong>Total: <?php echo $total_compras ?? 0; ?> compra(s)</strong>
                                     </div>
+                                    <?php if(!empty($busqueda) || $filtro !== 'todos'): ?>
+                                    <div>
+                                        <a href="entradaproveedor.php?tab=historialEntradas" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-times me-1"></i>Limpiar filtros
+                                        </a>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -555,7 +613,7 @@
         function cargarPrecioProducto(selectElement) {
             const productoId = selectElement.value;
             const row = selectElement.closest('tr');
-            const precioInput = row.querySelector('.precio-input');
+            const precioInput = row.querySelector('.precio-caja-input');
             const unidadesCell = row.querySelector('.unidades-caja');
             
             if (productoId && preciosProductos[productoId]) {
@@ -573,15 +631,15 @@
         function calcularTotalFila(inputElement) {
             const row = inputElement.closest('tr');
             const cantidadCajas = parseFloat(row.querySelector('.cantidad-input').value) || 0;
-            const precio = parseFloat(row.querySelector('.precio-input').value) || 0;
+            const precioPorCaja = parseFloat(row.querySelector('.precio-caja-input').value) || 0;
             const productoSelect = row.querySelector('.product-select');
             const productoId = productoSelect.value;
             const totalUnidadesCell = row.querySelector('.total-unidades');
             
-            // CORRECCIÓN: Calcular total basado en UNIDADES, no cajas
+            // Calcular total basado en PRECIO POR CAJA
             const unidadesPorCajaProducto = unidadesPorCaja[productoId] || 1;
             const cantidadUnidades = cantidadCajas * unidadesPorCajaProducto;
-            const total = cantidadUnidades * precio;
+            const total = cantidadCajas * precioPorCaja; // Total = cantidad_cajas * precio_por_caja
             
             // Actualizar todas las celdas
             totalUnidadesCell.textContent = cantidadUnidades;
@@ -624,7 +682,7 @@
                 <td class="unidades-caja text-center">0</td>
                 <td class="total-unidades text-center">0</td>
                 <td>
-                    <input type="number" class="form-control precio-input" name="precios[]" value="0.00" step="0.01" min="0" required onchange="calcularTotalFila(this)">
+                    <input type="number" class="form-control precio-caja-input" name="precios_caja[]" value="0.00" step="0.01" min="0" required onchange="calcularTotalFila(this)">
                 </td>
                 <td class="total-producto">S/ 0.00</td>
                 <td>
@@ -665,9 +723,28 @@
             actualizarContadorProductos();
         }
 
-        function filtrarHistorial(filtro) {
-            // Implementar filtrado del historial
-            console.log('Filtrar por:', filtro);
+        // Funciones para el filtrado del historial
+        function aplicarFiltro(filtro) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('filtro', filtro);
+            url.searchParams.set('tab', 'historialEntradas'); // Siempre mantener en historial al filtrar
+            // Mantener la búsqueda si existe
+            const busqueda = document.getElementById('buscarHistorial').value;
+            if (busqueda) {
+                url.searchParams.set('busqueda', busqueda);
+            }
+            window.location.href = url.toString();
+        }
+
+        function cambiarTab(tab) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tab);
+            // Limpiar filtros y búsqueda si vamos a nueva entrada
+            if (tab === 'nuevaEntrada') {
+                url.searchParams.delete('filtro');
+                url.searchParams.delete('busqueda');
+            }
+            window.location.href = url.toString();
         }
 
         function cerrarTurno() {
@@ -703,6 +780,26 @@
             const primeraFila = document.querySelector('.product-row');
             if (primeraFila) {
                 cargarPrecioProducto(primeraFila.querySelector('.product-select'));
+            }
+
+            // Configurar búsqueda en tiempo real (opcional)
+            const buscarHistorial = document.getElementById('buscarHistorial');
+            if (buscarHistorial) {
+                buscarHistorial.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        document.getElementById('formBusqueda').submit();
+                    }
+                });
+            }
+
+            // Activar la pestaña correcta al cargar la página
+            const tabActiva = '<?php echo $tab_activa; ?>';
+            if (tabActiva === 'historialEntradas') {
+                // Ya está configurado en PHP, pero por si acaso
+                const tabElement = document.querySelector('a[href="#historialEntradas"]');
+                if (tabElement) {
+                    new bootstrap.Tab(tabElement).show();
+                }
             }
         });
     </script>

@@ -11,29 +11,73 @@
 </head>
 <body>
     <?php
-        $conexion=pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
+        $conexion = pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
         if(!$conexion){
             echo "Un error de conexión ocurrió.";
             exit;
         }
 
-        $result1=pg_query($conexion,"SELECT COUNT(cod_producto) AS cantidad_producto FROM producto");
+        // 1. Contar productos totales
+        $result1 = pg_query($conexion, "SELECT COUNT(cod_producto) AS cantidad_producto FROM producto");
         if(!$result1){
             echo "Error al contar los productos.";
         }
 
-        $result2=pg_query($conexion,"SELECT COUNT(cod_categoria) AS cantidad_categoria FROM categoria");
+        // 2. Contar categorías
+        $result2 = pg_query($conexion, "SELECT COUNT(cod_categoria) AS cantidad_categoria FROM categoria");
         if(!$result2){
-            echo "Erro al contar las categorías.";
+            echo "Error al contar las categorías.";
         }
 
-        $result3=pg_query($conexion,"SELECT p.nombre AS producto_nombre,p.stock AS stock,c.nombre AS categoria_nombre FROM producto p
-                                     JOIN categoria c ON p.cod_categoria=c.cod_categoria
-                                     WHERE stock<=5 
-                                     ORDER BY cod_producto DESC");
+        // 3. Contar entradas este mes (desde detallecompra)
+        $result3 = pg_query($conexion, "SELECT COUNT(DISTINCT dc.cod_compra) AS entradas_mes 
+                                       FROM detallecompra dc
+                                       JOIN compra c ON dc.cod_compra = c.cod_compra
+                                       WHERE c.fecha_compra >= DATE_TRUNC('month', CURRENT_DATE)");
         if(!$result3){
-            echo "Error en seleccionar los productos.";
-            exit;
+            echo "Error al contar entradas del mes.";
+        }
+
+        // 4. Contar alertas activas (notificaciones pendientes)
+        $result4 = pg_query($conexion, "SELECT COUNT(*) AS alertas_activas 
+                                       FROM notificacion 
+                                       WHERE cod_estadonotificacion IN ('en001', 'en002')");
+        if(!$result4){
+            echo "Error al contar alertas activas.";
+        }
+
+        // 5. Contar alertas urgentes (stock menor a 3)
+        $result5 = pg_query($conexion, "SELECT COUNT(*) AS alertas_urgentes 
+                                       FROM producto 
+                                       WHERE stock < 3");
+        if(!$result5){
+            echo "Error al contar alertas urgentes.";
+        }
+
+        // 6. Movimientos recientes (últimos 3)
+        $result6 = pg_query($conexion, "SELECT m.fecha_movimiento, p.nombre as producto_nombre, 
+                                               tm.nombre as tipo_movimiento, m.observacion
+                                        FROM movimiento m
+                                        JOIN producto p ON m.cod_producto = p.cod_producto
+                                        JOIN tipomovimiento tm ON m.cod_tipomovimiento = tm.cod_tipomovimiento
+                                        ORDER BY m.fecha_movimiento DESC 
+                                        LIMIT 3");
+        if(!$result6){
+            echo "Error al obtener movimientos recientes.";
+        }
+
+        // 7. Alertas de stock urgentes (3 más urgentes)
+        $result7 = pg_query($conexion, "SELECT p.nombre as producto_nombre, p.stock, 
+                                               c.nombre as categoria_nombre,
+                                               pr.nombre as proveedor_nombre
+                                        FROM producto p
+                                        JOIN categoria c ON p.cod_categoria = c.cod_categoria
+                                        JOIN proveedor pr ON p.cod_proveedor = pr.cod_proveedor
+                                        WHERE p.stock < 10
+                                        ORDER BY p.stock ASC 
+                                        LIMIT 3");
+        if(!$result7){
+            echo "Error al obtener alertas urgentes.";
         }
     ?>
     <div class="grid">
@@ -42,14 +86,12 @@
                 <i class="fas fa-bars"></i>
             </button>
 
-    
             <div class="barra-lateral" id="barra-lateral">
                 <div class="logo">
                     <h4><i class="fas fa-store"></i> MAD MARKET</h4>
                     <small id="userRole">Encargado</small>
                 </div>
 
-        
                 <div class="turno-info">
                     <div class="fw-bold">María Alvarez</div>
                     <small>Turno: 08:00 - 16:00</small><br>
@@ -57,7 +99,7 @@
                 </div>
 
                 <div class="nav flex-column mt-3">
-                    <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="dashboard.php" class="nav-link active"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
                     <a href="gestionproductos.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
                     <a href="almacenproveedores.php" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
                     <a href="entradaproveedor.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
@@ -91,54 +133,82 @@
 
             <div class="container-fluid">
                 <div class="row mb-4">
+                    <!-- Tarjeta 1: Productos en Almacén -->
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card stats-card primary h-100">
                             <i class="fas fa-boxes text-primary"></i>
                             <?php
-                            while($row1=pg_fetch_assoc($result1)){
-                                echo "
-                                <div class='number'>$row1[cantidad_producto]</div>
-                                ";
+                            if($row1 = pg_fetch_assoc($result1)){
+                                echo "<div class='number'>{$row1['cantidad_producto']}</div>";
+                            } else {
+                                echo "<div class='number'>0</div>";
                             }
                             ?>
                             <div class="label">Productos en Almacén</div>
                             <?php
-                            while($row2=pg_fetch_assoc($result2)){
-                                echo "
-                                    <div class='text-muted'>$row2[cantidad_categoria]
-                                ";
-
-                                if($row2['cantidad_categoria']=1){
-                                    echo "categoría</div>";
-                                } else {
-                                    echo "categorías</div>";
-                                }
+                            if($row2 = pg_fetch_assoc($result2)){
+                                $categoria_text = ($row2['cantidad_categoria'] == 1) ? "categoría" : "categorías";
+                                echo "<div class='text-muted'>{$row2['cantidad_categoria']} {$categoria_text}</div>";
+                            } else {
+                                echo "<div class='text-muted'>0 categorías</div>";
                             }
                             ?>
                         </div>
                     </div>
+
+                    <!-- Tarjeta 2: Entradas Este Mes (desde compras) -->
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card stats-card success h-100">
                             <i class="fas fa-truck-loading text-success"></i>
-                            <div class="number">23</div>
-                            <div class="label">Entradas Este Mes</div>
-                            <small class="text-muted">+5% vs mes anterior</small>
+                            <?php
+                            if($row3 = pg_fetch_assoc($result3)){
+                                echo "<div class='number'>{$row3['entradas_mes']}</div>";
+                            } else {
+                                echo "<div class='number'>0</div>";
+                            }
+                            ?>
+                            <div class="label">Compras Este Mes</div>
+                            <small class="text-muted">Entradas desde proveedores</small>
                         </div>
                     </div>
+
+                    <!-- Tarjeta 3: Alertas Activas -->
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card stats-card warning h-100">
                             <i class="fas fa-exclamation-triangle text-warning"></i>
-                            <div class="number">7</div>
+                            <?php
+                            if($row4 = pg_fetch_assoc($result4)){
+                                echo "<div class='number'>{$row4['alertas_activas']}</div>";
+                            } else {
+                                echo "<div class='number'>0</div>";
+                            }
+                            ?>
                             <div class="label">Alertas Activas</div>
-                            <small class="text-muted">3 requieren atención urgente</small>
+                            <?php
+                            if($row5 = pg_fetch_assoc($result5)){
+                                echo "<small class='text-muted'>{$row5['alertas_urgentes']} requieren atención urgente</small>";
+                            } else {
+                                echo "<small class='text-muted'>0 requieren atención urgente</small>";
+                            }
+                            ?>
                         </div>
                     </div>
+
+                    <!-- Tarjeta 4: Productos con Stock Bajo -->
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card stats-card danger h-100">
-                            <i class="fas fa-arrow-right text-danger"></i>
-                            <div class="number">15</div>
-                            <div class="label">Traslados Pendientes</div>
-                            <small class="text-muted">5 para hoy</small>
+                            <i class="fas fa-exclamation-circle text-danger"></i>
+                            <?php
+                            $query_bajo_stock = pg_query($conexion, "SELECT COUNT(*) as bajos FROM producto WHERE stock <= 5");
+                            if($query_bajo_stock){
+                                $row_bajo = pg_fetch_assoc($query_bajo_stock);
+                                echo "<div class='number'>{$row_bajo['bajos']}</div>";
+                            } else {
+                                echo "<div class='number'>0</div>";
+                            }
+                            ?>
+                            <div class="label">Stock Bajo</div>
+                            <small class="text-muted">Stock menor o igual a 5 unidades</small>
                         </div>
                     </div>
                 </div>
@@ -161,19 +231,19 @@
                                         </div>
                                     </a>
 
-                                    <a href="trasladotienda.php">
-                                        <div class=accion-card>
-                                            <div class="accion-icono"><i class="fas fa-arrow-right fa-2x mb-2 d-block"></i></div>
-                                            <div class="accion-titulo"><span class="fw-bold">Traslado a tienda</span></div>
-                                            <div class="accion-descripcion"><small class="db-block mt-1">Envío de productos</small></div>
-                                        </div>
-                                    </a>
-
                                     <a href="gestionproductos.php">
                                         <div class="accion-card">
                                             <div class="accion-icono"><i class="fas fa-plus-circle fa-2x mb-2 d-block"></i></div>
                                             <div class="accion-titulo"><span class="fw-bold">Nuevo producto</span></div>
                                             <div class="accion-descripcion"><small class="d-block mt-1">Agregar productos al sistema</small></div>
+                                        </div>
+                                    </a>
+
+                                    <a href="almacenproveedores.php">
+                                        <div class="accion-card">
+                                            <div class="accion-icono"><i class="fas fa-truck fa-2x mb-2 d-block"></i></div>
+                                            <div class="accion-titulo"><span class="fw-bold">Ver Proveedores</span></div>
+                                            <div class="accion-descripcion"><small class="d-block mt-1">Gestionar proveedores</small></div>
                                         </div>
                                     </a>
 
@@ -192,6 +262,7 @@
             </div>
 
             <div class="row">
+                <!-- Panel de Alertas de Stock Urgentes (3 alertas) -->
                 <div class="col-xl-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-warning text-white">
@@ -199,41 +270,42 @@
                         </div>
                         <div class="card-body p-0">
                             <div class="list-group list-group-flush">
-                                <div class="list-group-item">
-                                    <div class="d-flex w-100 justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1 text-danger">Coca Cola 500ml</h6>
-                                            <p class="mb-1">Stock en almacén: <strong>2 cajas</strong> (mínimo: 5)</p>
-                                            <small class="text-muted">Última entrada: 15/12/2024</small>
+                                <?php
+                                if($result7 && pg_num_rows($result7) > 0){
+                                    while($alerta = pg_fetch_assoc($result7)){
+                                        $badge_class = ($alerta['stock'] < 3) ? 'bg-danger' : 'bg-warning';
+                                        $badge_text = ($alerta['stock'] < 3) ? 'URGENTE' : 'BAJO';
+                                        $text_class = ($alerta['stock'] < 3) ? 'text-danger' : 'text-warning';
+                                        
+                                        echo "
+                                        <div class='list-group-item'>
+                                            <div class='d-flex w-100 justify-content-between align-items-center'>
+                                                <div>
+                                                    <h6 class='mb-1 {$text_class}'>{$alerta['producto_nombre']}</h6>
+                                                    <p class='mb-1'>Stock: <strong>{$alerta['stock']} unidades</strong></p>
+                                                    <small class='text-muted'>Categoría: {$alerta['categoria_nombre']}</small>
+                                                </div>
+                                                <span class='badge {$badge_class}'>{$badge_text}</span>
+                                            </div>
                                         </div>
-                                        <span class="badge bg-danger">URGENTE</span>
+                                        ";
+                                    }
+                                } else {
+                                    echo "
+                                    <div class='list-group-item text-center py-4'>
+                                        <i class='fas fa-check-circle text-success fa-2x mb-2'></i>
+                                        <p class='mb-0 text-muted'>No hay alertas urgentes</p>
+                                        <small class='text-muted'>Todos los productos tienen stock suficiente</small>
                                     </div>
-                                </div>
-                                <div class="list-group-item">
-                                    <div class="d-flex w-100 justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1 text-warning">Galletas Oreo</h6>
-                                            <p class="mb-1">Stock en tienda: <strong>8 unidades</strong> (mínimo: 15)</p>
-                                            <small class="text-muted">Último traslado: 18/12/2024</small>
-                                        </div>
-                                        <span class="badge bg-warning">BAJO</span>
-                                    </div>
-                                </div>
-                                <div class="list-group-item">
-                                    <div class="d-flex w-100 justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1 text-warning">Aceite Primor 1L</h6>
-                                            <p class="mb-1">Stock en almacén: <strong>4 cajas</strong> (mínimo: 6)</p>
-                                            <small class="text-muted">Última entrada: 12/12/2024</small>
-                                        </div>
-                                        <span class="badge bg-warning">BAJO</span>
-                                    </div>
-                                </div>
+                                    ";
+                                }
+                                ?>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Panel de Movimientos Recientes (3 movimientos) -->
                 <div class="col-xl-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-info text-white">
@@ -241,67 +313,44 @@
                         </div>
                         <div class="card-body">
                             <div class="timeline">
-                                <div class="timeline-item">
-                                    <small class="text-muted">Hoy, 10:30 AM</small>
-                                    <p class="mb-0"><i class="fas fa-truck-loading text-success me-2"></i>Entrada de 10 cajas de Leche Gloria</p>
-                                </div>
-                                <div class="timeline-item warning">
-                                    <small class="text-muted">Hoy, 09:15 AM</small>
-                                    <p class="mb-0"><i class="fas fa-arrow-right text-warning me-2"></i>Traslado de 5 cajas de Aceite a tienda</p>
-                                </div>
-                                <div class="timeline-item">
-                                    <small class="text-muted">Ayer, 15:45 PM</small>
-                                    <p class="mb-0"><i class="fas fa-truck-loading text-success me-2"></i>Entrada de 8 cajas de Arroz Costeño</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header bg-danger text-white">
-                                <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Productos que Requieren Atención</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>Producto</th>
-                                                <th>Categoría</th>
-                                                <th>Stock</th>
-                                                <th>Estado</th>
-                                                <th>Acción</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php
-                                            while($row3=pg_fetch_assoc($result3)){
-                                                echo "
-                                                <tr>
-                                                    <td><strong>$row3[producto_nombre]</strong></td>
-                                                    <td>$row3[categoria_nombre]</td>
-                                                    <td>$row3[stock]</td>";
-
-                                                    if($row3['stock']<=1){
-                                                        echo "<td><span class='badge bg-danger'>Urgente</span></td>";
-                                                    } else {
-                                                        echo "<td><span class='badge bg-warning text-dark'>Crítico</span></td>";
-                                                    }
-
-                                                    if($row3['stock']<=1){
-                                                        echo "<td><button class='btn btn-sm btn-outline-primary'>Solicitar</button></td>";
-                                                    } else {
-                                                        echo "<td><button class='btn btn-sm btn-outline-warning'>Trasladar</button></td>";
-                                                    }
-                                                echo "</tr>";
-                                            }
-                                            ?>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <?php
+                                if($result6 && pg_num_rows($result6) > 0){
+                                    while($movimiento = pg_fetch_assoc($result6)){
+                                        $icon_class = '';
+                                        $text_class = '';
+                                        
+                                        if($movimiento['tipo_movimiento'] == 'Entrada') {
+                                            $icon_class = 'fas fa-truck-loading text-success';
+                                        } elseif($movimiento['tipo_movimiento'] == 'Salida') {
+                                            $icon_class = 'fas fa-arrow-right text-warning';
+                                            $text_class = 'warning';
+                                        } else {
+                                            $icon_class = 'fas fa-exchange-alt text-info';
+                                        }
+                                        
+                                        $fecha = date('d/m/Y H:i', strtotime($movimiento['fecha_movimiento']));
+                                        $hoy = date('d/m/Y');
+                                        $fecha_simple = date('d/m/Y', strtotime($movimiento['fecha_movimiento']));
+                                        
+                                        $fecha_display = ($fecha_simple == $hoy) ? "Hoy, " . date('H:i', strtotime($movimiento['fecha_movimiento'])) : $fecha;
+                                        
+                                        echo "
+                                        <div class='timeline-item {$text_class}'>
+                                            <small class='text-muted'>{$fecha_display}</small>
+                                            <p class='mb-0'><i class='{$icon_class} me-2'></i>{$movimiento['tipo_movimiento']} - {$movimiento['producto_nombre']}</p>
+                                            <small class='text-muted'>{$movimiento['observacion']}</small>
+                                        </div>
+                                        ";
+                                    }
+                                } else {
+                                    echo "
+                                    <div class='text-center py-4'>
+                                        <i class='fas fa-info-circle fa-2x text-muted mb-2'></i>
+                                        <p class='mb-0 text-muted'>No hay movimientos recientes</p>
+                                    </div>
+                                    ";
+                                }
+                                ?>
                             </div>
                         </div>
                     </div>
@@ -309,5 +358,35 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function cerrarTurno() {
+            if(confirm('¿Está seguro de que desea cerrar el turno?')) {
+                alert('Turno cerrado correctamente');
+                // Aquí iría la lógica para cerrar el turno
+            }
+        }
+
+        // Búsqueda global
+        document.getElementById('globalSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            if (searchTerm.length > 2) {
+                // Aquí iría la lógica para buscar en tiempo real
+                console.log('Buscando:', searchTerm);
+            }
+        });
+
+        // Inicializar tooltips de Bootstrap si los hay
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard cargado correctamente');
+        });
+    </script>
 </body>
 </html>
+
+<?php
+// Cerrar conexión
+if($conexion){
+    pg_close($conexion);
+}
+?>
