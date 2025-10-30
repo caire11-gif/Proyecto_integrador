@@ -8,12 +8,25 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/administrador-dashboard/datos.css">
     <link rel="stylesheet" href="css/administrador-estilo.css">
+    <link rel="stylesheet" href="css/administrador-boton/boton.css">
 </head>
 <body>
     <?php
     $conexion=pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
     if(!$conexion){
         echo "Un error de conexión ocurrió";
+    }
+
+    session_start();
+    $usuarioadmin=$_SESSION['nombreusuarioadmin'];
+    $apellidoadmin=$_SESSION['apellidousuarioadmin'];
+
+    $inicialNombre = substr($usuarioadmin, 0, 1);
+    $inicialApellido=substr($apellidoadmin,0,1);
+
+    if (!isset($_SESSION['nombreusuarioadmin'])) {
+        header("Location: ../login.php");
+        exit;
     }
 
     $result1=pg_query($conexion,"SELECT SUM(dv.total) AS total FROM detalleventa dv JOIN venta v ON dv.cod_venta=v.cod_venta
@@ -41,27 +54,29 @@
                     <a href="proveedores.php" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
                     <a href="controlpersonal.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Control de Personal</ul></a>
                     <a href="registroventas.php" class="nav-link"><ul><i class="fas fa-arrow-right"></i>Registro de Ventas</ul></a>
-                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    
                 </div>
             </div>
         </main>
 
         <div class="secundario">
             <div class="header">
-                <div class="caja-busqueda">
-                    <i class="fas fa-search"></i>
-                    <input type="text" class="form-control" placeholder="Buscar productos, ventas..." id="globalSearch">
-                </div>
-                
                 <div class="usuario-info">
-                    <div class="usuario-avatar" id="usuarioAvatar">AP</div>
+                    <div class="usuario-avatar" id="usuarioAvatar"><?php echo htmlspecialchars($inicialNombre.$inicialApellido)?></div>
                     <div>
-                        <div class="fw-bold fs-5" id="userName">Admin Principal</div>
-                        <small class="text-muted" id="userPosition">Administrador - Turno Activo</small>
+                        <div class="fw-bold fs-5" id="userName"><?php echo htmlspecialchars($usuarioadmin." ".$apellidoadmin) ?></div>
+                        <small class="text-muted" id="userPosition">Administrador</small>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger ms-3" onclick="cerrarTurno()">
-                        <i class="fas fa-sign-out-alt me-1"></i>Cerrar Turno
-                    </button>
+                    <div class="dropdown-container">
+                        <div class="dropdown">
+                            <button class="dropdown-btn" id="dropdownBtn">
+                                <span class="arrow" id="arrow">▲</span>
+                            </button>
+                            <ul class="dropdown-list" id="dropdownList">
+                                <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
             <br>
@@ -235,5 +250,24 @@
         </div>
         </div>
     </div>
+    <script>
+    const dropdownBtn = document.getElementById("dropdownBtn");
+    const dropdownList = document.getElementById("dropdownList");
+    const arrow = document.getElementById("arrow");
+
+    dropdownBtn.addEventListener("click", () => {
+        const isVisible = dropdownList.style.display === "block";
+        dropdownList.style.display = isVisible ? "none" : "block";
+        arrow.style.transform = isVisible ? "rotate(0deg)" : "rotate(180deg)";
+    });
+                            
+    // Cierra el menú si haces clic fuera
+    document.addEventListener("click", (e) => {
+        if (!dropdownBtn.contains(e.target) && !dropdownList.contains(e.target)) {
+            dropdownList.style.display = "none";
+            arrow.style.transform = "rotate(0deg)";
+        }
+    });
+    </script>
 </body>
 </html>

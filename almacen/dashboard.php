@@ -4,16 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mad Market - Sistema de Encargado</title>
-     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/almacen-dashboard/datos.css">
     <link rel="stylesheet" href="css/almacen-interfaz/interfaz.css">
+    <link rel="stylesheet" href="css/almacen-boton/boton.css">
 </head>
 <body>
     <?php
         $conexion = pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
         if(!$conexion){
             echo "Un error de conexión ocurrió.";
+        }
+
+        session_start();
+        $usuarioencargado=$_SESSION['nombreusuarioencargado'];
+        $apellidoencargado=$_SESSION['apellidousuarioencargado'];
+
+        $inicialNombre = substr($usuarioencargado, 0, 1);
+        $inicialApellido=substr($apellidoencargado,0,1);
+
+        if (!isset($_SESSION['nombreusuarioencargado'])) {
+            header("Location: ../login.php");
             exit;
         }
 
@@ -92,12 +104,6 @@
                     <small id="userRole">Encargado</small>
                 </div>
 
-                <div class="turno-info">
-                    <div class="fw-bold">María Alvarez</div>
-                    <small>Turno: 08:00 - 16:00</small><br>
-                    <small id="tiempoActivoSidebar">0h 0m activo</small>
-                </div>
-
                 <div class="nav flex-column mt-3">
                     <a href="dashboard.php" class="nav-link active"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
                     <a href="gestionproductos.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
@@ -105,27 +111,28 @@
                     <a href="entradaproveedor.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
                     <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
                     <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
-                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
 
         <div class="secundario">
             <div class="header">
-                <div class="caja-busqueda">
-                    <i class="fas fa-search"></i>
-                    <input type="text" class="form-control" placeholder="Buscar productos, ventas..." id="globalSearch">
-                </div>
-                
                 <div class="usuario-info">
-                    <div class="usuario-avatar" id="usuarioAvatar">MA</div>
+                    <div class="usuario-avatar" id="usuarioAvatar"><?php echo htmlspecialchars($inicialNombre.$inicialApellido)?></div>
                     <div>
-                        <div class="fw-bold fs-5" id="userName">María Alvarez</div>
-                        <small class="text-muted" id="userPosition">Encargado - Turno Activo</small>
+                        <div class="fw-bold fs-5" id="userName"><?php echo htmlspecialchars($usuarioencargado." ".$apellidoencargado) ?></div>
+                        <small class="text-muted" id="userPosition">Encargado</small>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger ms-3" onclick="cerrarTurno()">
-                        <i class="fas fa-sign-out-alt me-1"></i>Cerrar Turno
-                    </button>
+                    <div class="dropdown-container">
+                        <div class="dropdown">
+                            <button class="dropdown-btn" id="dropdownBtn">
+                                <span class="arrow" id="arrow">▲</span>
+                            </button>
+                            <ul class="dropdown-list" id="dropdownList">
+                                <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -360,33 +367,28 @@
     </div>
 
     <script>
-        function cerrarTurno() {
-            if(confirm('¿Está seguro de que desea cerrar el turno?')) {
-                alert('Turno cerrado correctamente');
-                // Aquí iría la lógica para cerrar el turno
-            }
-        }
-
-        // Búsqueda global
-        document.getElementById('globalSearch').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            if (searchTerm.length > 2) {
-                // Aquí iría la lógica para buscar en tiempo real
-                console.log('Buscando:', searchTerm);
-            }
-        });
-
         // Inicializar tooltips de Bootstrap si los hay
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Dashboard cargado correctamente');
         });
+
+    const dropdownBtn = document.getElementById("dropdownBtn");
+    const dropdownList = document.getElementById("dropdownList");
+    const arrow = document.getElementById("arrow");
+
+    dropdownBtn.addEventListener("click", () => {
+        const isVisible = dropdownList.style.display === "block";
+        dropdownList.style.display = isVisible ? "none" : "block";
+        arrow.style.transform = isVisible ? "rotate(0deg)" : "rotate(180deg)";
+    });
+                            
+    // Cierra el menú si haces clic fuera
+    document.addEventListener("click", (e) => {
+        if (!dropdownBtn.contains(e.target) && !dropdownList.contains(e.target)) {
+            dropdownList.style.display = "none";
+            arrow.style.transform = "rotate(0deg)";
+        }
+    });
     </script>
 </body>
 </html>
-
-<?php
-// Cerrar conexión
-if($conexion){
-    pg_close($conexion);
-}
-?>

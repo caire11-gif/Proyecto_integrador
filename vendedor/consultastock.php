@@ -1,12 +1,17 @@
 <?php
-session_start();
-
 $conexion = pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
 
 if(!$conexion){
     echo "Un error de conexión ocurrió. <br>";
     exit;
 }
+
+session_start();
+$usuariovendedor=$_SESSION['nombreusuariovendedor'];
+$apellidovendedor=$_SESSION['apellidousuariovendedor'];
+
+$inicialNombre = substr($usuariovendedor, 0, 1);
+$inicialApellido=substr($apellidovendedor,0,1);
 
 // Procesar búsqueda
 $resultadosBusqueda = [];
@@ -91,6 +96,7 @@ if(empty($resultadosBusqueda)) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/vendedor-estilo.css">
+    <link rel="stylesheet" href="css/vendedor-boton/boton.css">
     <style>
         .stock-main {
             padding: 20px;
@@ -325,19 +331,12 @@ if(empty($resultadosBusqueda)) {
                     <small id="userRole">Vendedor</small>
                 </div>
 
-                <div class="turno-info">
-                    <div class="fw-bold">Carlos Rodríguez</div>
-                    <small>Turno: 08:00 - 16:00</small><br>
-                    <small id="tiempoActivoSidebar">0h 0m activo</small>
-                </div>
-
                 <div class="nav flex-column mt-3">
                     <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
                     <a href="nuevaventa.php" class="nav-link"><ul><i class="fas fa-cash-register"></i>Nueva Venta</ul></a>
                     <a href="registrodevolucion.php" class="nav-link"><ul><i class="fas fa-undo-alt"></i>Registrar Devolución</ul></a>
-                   <a href="boletas-facturas.php" class="nav-link active"><ul><i class="fas fa-receipt"></i>Boletas/Facturas</ul></a>
+                    <a href="boletafactura.php" class="nav-link active"><ul><i class="fas fa-receipt"></i>Boletas/Facturas</ul></a>
                     <a href="consultastock.php" class="nav-link active"><ul><i class="fas fa-boxes"></i>Consultar Stock</ul></a>
-                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
@@ -346,14 +345,21 @@ if(empty($resultadosBusqueda)) {
             <div class="header">
               
                 <div class="usuario-info">
-                    <div class="usuario-avatar" id="usuarioAvatar">CR</div>
+                    <div class="usuario-avatar" id="usuarioAvatar"><?php echo htmlspecialchars($inicialNombre.$inicialApellido)?></div>
                     <div>
-                        <div class="fw-bold fs-5" id="userName">Carlos Rodríguez</div>
-                        <small class="text-muted" id="userPosition">Vendedor - Turno Activo</small>
+                        <div class="fw-bold fs-5" id="userName"><?php echo htmlspecialchars($usuariovendedor." ".$apellidovendedor) ?></div>
+                        <small class="text-muted" id="userPosition">Vendedor</small>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger ms-3" onclick="cerrarTurno()">
-                        <i class="fas fa-sign-out-alt me-1"></i>Cerrar Turno
-                    </button>
+                    <div class="dropdown-container">
+                        <div class="dropdown">
+                            <button class="dropdown-btn" id="dropdownBtn">
+                                <span class="arrow" id="arrow">▲</span>
+                            </button>
+                            <ul class="dropdown-list" id="dropdownList">
+                                <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -549,16 +555,28 @@ if(empty($resultadosBusqueda)) {
     </div>
 
     <script>
-        function cerrarTurno() {
-            if(confirm('¿Estás seguro de que deseas cerrar el turno?')) {
-                window.location.href = '../login.html';
-            }
-        }
-
         // Exportar a CSV
         document.getElementById('btnExportar').addEventListener('click', function() {
             alert('Funcionalidad de exportación CSV - Próximamente');
         });
+
+        const dropdownBtn = document.getElementById("dropdownBtn");
+    const dropdownList = document.getElementById("dropdownList");
+    const arrow = document.getElementById("arrow");
+
+    dropdownBtn.addEventListener("click", () => {
+        const isVisible = dropdownList.style.display === "block";
+        dropdownList.style.display = isVisible ? "none" : "block";
+        arrow.style.transform = isVisible ? "rotate(0deg)" : "rotate(180deg)";
+    });
+                            
+    // Cierra el menú si haces clic fuera
+    document.addEventListener("click", (e) => {
+        if (!dropdownBtn.contains(e.target) && !dropdownList.contains(e.target)) {
+            dropdownList.style.display = "none";
+            arrow.style.transform = "rotate(0deg)";
+        }
+    });
     </script>
 </body>
 </html>

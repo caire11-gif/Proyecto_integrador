@@ -7,13 +7,25 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/almacen-estilo.css">
+    <link rel="stylesheet" href="css/almacen-boton/boton.css">
 </head>
 <body>
     <?php
-        session_start();
         $conexion = pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
         if(!$conexion){
             echo "Un error de conexión ocurrió.";
+            exit;
+        }
+
+        session_start();
+        $usuarioencargado=$_SESSION['nombreusuarioencargado'];
+        $apellidoencargado=$_SESSION['apellidousuarioencargado'];
+
+        $inicialNombre = substr($usuarioencargado, 0, 1);
+        $inicialApellido=substr($apellidoencargado,0,1);
+
+        if (!isset($_SESSION['nombreusuarioencargado'])) {
+            header("Location: ../login.php");
             exit;
         }
 
@@ -285,27 +297,28 @@
                     <a href="entradaproveedor.php" class="nav-link active"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
                     <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
                     <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
-                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
 
         <div class="secundario">
             <div class="header">
-                <div class="caja-busqueda">
-                    <i class="fas fa-search"></i>
-                    <input type="text" class="form-control" placeholder="Buscar productos, ventas..." id="globalSearch">
-                </div>
-                
                 <div class="usuario-info">
-                    <div class="usuario-avatar" id="usuarioAvatar">MA</div>
+                    <div class="usuario-avatar" id="usuarioAvatar"><?php echo htmlspecialchars($inicialNombre.$inicialApellido)?></div>
                     <div>
-                        <div class="fw-bold fs-5" id="userName">María Alvarez</div>
-                        <small class="text-muted" id="userPosition">Encargado - Turno Activo</small>
+                        <div class="fw-bold fs-5" id="userName"><?php echo htmlspecialchars($usuarioencargado." ".$apellidoencargado) ?></div>
+                        <small class="text-muted" id="userPosition">Encargado</small>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger ms-3" onclick="cerrarTurno()">
-                        <i class="fas fa-sign-out-alt me-1"></i>Cerrar Turno
-                    </button>
+                    <div class="dropdown-container">
+                        <div class="dropdown">
+                            <button class="dropdown-btn" id="dropdownBtn">
+                                <span class="arrow" id="arrow">▲</span>
+                            </button>
+                            <ul class="dropdown-list" id="dropdownList">
+                                <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                            </ul>
+                        </div>
+                    </div> 
                 </div>
             </div>
             <br>
