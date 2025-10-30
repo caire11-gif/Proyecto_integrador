@@ -5,10 +5,4 @@
 @import url("vendedor-dashboard/dashboard.css");
 
 /*Nueva venta*/
-@import url("vendedor-nuevaventa/nuevaventa.css");
-
-@import url("stock/stock.css");
-
-@import url("boleta-facturas/boletas-facturas.css");
-
-@import url("vendedor-nuevaventa/panel-venta.css");
+@import url("vendedor-nuevaventa/nuevaventa.css")

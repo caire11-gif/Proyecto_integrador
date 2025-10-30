@@ -337,7 +337,7 @@ if(empty($resultadosBusqueda)) {
                     <a href="registrodevolucion.php" class="nav-link"><ul><i class="fas fa-undo-alt"></i>Registrar Devolución</ul></a>
                    <a href="boletas-facturas.php" class="nav-link active"><ul><i class="fas fa-receipt"></i>Boletas/Facturas</ul></a>
                     <a href="consultastock.php" class="nav-link active"><ul><i class="fas fa-boxes"></i>Consultar Stock</ul></a>
-                    <a href="../login.html" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>

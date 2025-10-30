@@ -141,7 +141,7 @@
                     <a href="entradaproveedor.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
                     <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
                     <a href="reportes.php" class="nav-link active"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
-                    <a href="#" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
@@ -164,7 +164,7 @@
                     </button>
                 </div>
             </div>
-            
+            <br>
             <div class="contenido-principal">
                 <div class="container-fluid reportes-page">
                     <!-- Encabezado -->
@@ -271,7 +271,7 @@
                     <!-- Pestañas -->
                     <ul class="nav nav-tabs mb-4" id="reportesTabs">
                         <li class="nav-item">
-                            <a class="nav-link active" data-bs-toggle="tab" href="#tabReportes">
+                            <a class="nav-link active text-dark" data-bs-toggle="tab" href="#tabReportes">
                                 <i class="fas fa-list-alt me-2"></i>Movimientos
                                 <?php if($result_movimientos): ?>
                                 <span class="badge bg-primary ms-1"><?php echo pg_num_rows($result_movimientos); ?></span>
@@ -279,7 +279,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" href="#tabProductosVendidos">
+                            <a class="nav-link text-dark" data-bs-toggle="tab" href="#tabProductosVendidos">
                                 <i class="fas fa-trophy me-2"></i>Productos Más Vendidos
                                 <?php if($result_ventas): ?>
                                 <span class="badge bg-success ms-1"><?php echo pg_num_rows($result_ventas); ?></span>

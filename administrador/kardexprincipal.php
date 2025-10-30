@@ -35,57 +35,13 @@
 
     $result7=pg_query($conexion,"SELECT ri.fecha_inventario AS fecha,p.nombre AS producto_nombre,p.cod_producto AS producto_codigo,tm.nombre AS tipomovimiento_nombre,
                                  tm.cod_tipomovimiento AS tipomovimiento_codigo,u.usuario AS usuario_nombre,ri.cantidad AS cantidad,ri.precio_unitario AS precio_unitario,
-                                 ri.total AS total,ri.cantidad_final,ri.total_final FROM registroinventario ri
+                                 ri.total AS total FROM registroinventario ri
                                  JOIN producto p ON ri.cod_producto=p.cod_producto
                                  JOIN tipomovimiento tm ON ri.cod_tipomovimiento=tm.cod_tipomovimiento
                                  JOIN usuario u ON ri.cod_usuario=u.cod_usuario
                                  ORDER BY fecha_inventario desc");
     if(!$result7){
         echo "Error al seleccionar el registro del inventario." . pg_last_error($conexion);
-    }
-
-    $actent="";
-    $actsal="";
-    
-
-    if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['accion']==='actualizar')){
-        
-
-        $selectprod=pg_query_params($conexion,"SELECT cantidad,total,cod_tipomovimiento from registroinventario WHERE cod_producto=$codactu",array($codactu));
-        if(!$selectprod){
-            echo "Error al seleccionar el código del producto.";
-            exit;
-        }
-
-        $codactprod=pg_fetch_assoc($selectprod);
-        $totalprod=(float)$codactprod['total'];
-        $cantprod=(int)$codactprod['cantidad'];
-        $codtimovprod=trim($codactprod['cod_tipomovimiento']);
-
-        if($codtimovprod==='TM001'){
-            $actent=pg_query_params($conexion,"UPDATE registroinventario 
-                     SET cantidad_final = cantidad_final + $2
-                      total_final=total_final + $3
-                     WHERE cod_producto = $1",array($codactu,$cantprod,$totalprod));
-            if(!$actent){
-                echo "Error al actualizar para entradas.";
-                exit;
-            }
-        } else if($codtimovprod==='TM002'){
-            $actsal=pg_query_params($conexion,"UPDATE registroinventario 
-                     SET cantidad_final = cantidad_final - $2
-                      total_final=total_final - $3
-                     WHERE cod_producto = $1",array($codactu,$cantprod,$totalprod));
-            if(!$actsal){
-                echo "Error al actualizar para salidas.";
-            }
-        }
-    }
-
-    $selectcatetot=pg_query_params($conexion,"SELECT cantidad_final,total_final FROM registroinventario WHERE cod_producto=$1",array($codactu));
-    if(!$selectcatetot){
-        echo "Error al seleccionar la cantidad y total final.";
-        exit;
     }
     ?>
     <div class="grid">
@@ -234,7 +190,6 @@
                                     <th colspan="3" class="bg-success text-white">Entradas</th>
                                     <th colspan="3" class="bg-danger text-white">Salidas</th>
                                     <th colspan="3" class="bg-primary text-white">Saldo Final</th>
-                                    <th rowspan="2" class="bg-light">Botón</th>
                                 </tr>
                                 <tr>
 
@@ -268,8 +223,6 @@
                                             <td>-</td>
                                             <td>-</td>
                                             <td>-</td>
-                                            <td>$row7[cantidad_final]</td>
-                                            <td>$row7[total_final]</td>
                                             ";
                                         echo "</tr>";
                                         
@@ -288,18 +241,6 @@
                                             <td class='text-success fw-bold'>$row7[cantidad]</td>
                                             <td>$row7[precio_unitario]</td>
                                             <td class='fw-bold'>$row7[total]</td>
-                                            <td>$row7[cantidad_final]</td>
-                                            <td>$row7[total_final]</td>
-                                            <td>
-                                                <div class='btn-group btn-group-sm gap-1'>
-                                                    <form method='POST'>
-                                                        <input type='hidden' name='cod_proveedor' value='{$row7[producto_codigo]}'>
-                                                        <button class='btn btn-outline-primary' title='Actualizar' id='actualizarRegistro' name='accion' value='actualizar'>
-                                                            <i class='fas fa-edit'></i>
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </td>
                                         </tr>
                                         ";
                                     }               

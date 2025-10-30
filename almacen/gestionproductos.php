@@ -85,10 +85,20 @@
                             ));
 
                             if($result) {
-                                echo "<script>
-                                    alert('Producto registrado correctamente');
-                                    window.location.href = 'gestionproductos.php';
-                                </script>";
+                                echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
+                                        <script>
+                                            document.addEventListener('DOMContentLoaded', function(){
+                                                Swal.fire({
+                                                    icon: 'success',
+                                                    title: 'Proveedor registrado',
+                                                    text: 'Se registró el proveedor correctamente',
+                                                    width: '350px'
+                                                }).then(() => {
+                                                    window.location.href = '" . $_SERVER['PHP_SELF'] . "';
+                                                });
+                                            });
+                                        </script>";
+                                        exit;
                             } else {
                                 echo "<script>alert('Error al registrar el producto: " . pg_last_error($conexion) . "');</script>";
                             }
@@ -97,8 +107,9 @@
                         echo "<script>alert('Error: " . $e->getMessage() . "');</script>";
                     }
                 }
+                exit;
             }
-            elseif($_POST['accion'] === 'editar'){
+            else if($_POST['accion'] === 'editar'){
                 $codprod = $_POST['codigoProducto'] ?? '';
                 $nombreprod = $_POST['nombreProducto'] ?? '';
                 $precio_costo = $_POST['precioCosto'] ?? '';
@@ -125,10 +136,20 @@
                     ));
 
                     if($result) {
-                        echo "<script>
-                            alert('Producto actualizado correctamente');
-                            window.location.href = 'gestionproductos.php';
-                        </script>";
+                        echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function(){
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Proveedor actualizado',
+                                            text: 'Se actualizó el proveedor correctamente',
+                                            width: '350px'
+                                        }).then(() => {
+                                            window.location.href = '" . $_SERVER['PHP_SELF'] . "';
+                                        });                                        
+                                    });
+                                </script>";
+                        exit;
                     } else {
                         echo "<script>alert('Error al actualizar el producto');</script>";
                     }
@@ -164,10 +185,20 @@
                             $result = pg_query_params($conexion, $sql, array($codprod));
 
                             if($result) {
-                                echo "<script>
-                                    alert('Producto eliminado correctamente');
-                                    window.location.href = 'gestionproductos.php';
-                                </script>";
+                                echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
+                                        <script>
+                                            document.addEventListener('DOMContentLoaded', function(){
+                                                Swal.fire({
+                                                    icon: 'success',
+                                                    title: 'Proveedor eliminado',
+                                                    text: 'Se eliminó el proveedor correctamente',
+                                                    width: '350px'
+                                                }).then(() => {
+                                                    window.location.href = '" . $_SERVER['PHP_SELF'] . "';
+                                                });
+                                            });
+                                        </script>";
+                                exit;
                             } else {
                                 echo "<script>alert('Error al eliminar el producto');</script>";
                             }
@@ -214,7 +245,7 @@
                     <a href="entradaproveedor.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
                     <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
                     <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
-                    <a href="#" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                    <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                 </div>
             </div>
         </main>
@@ -267,39 +298,39 @@
                                     <input type="hidden" name="accion" value="<?php echo $producto_editar ? 'editar' : 'insertar'; ?>">
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label class="form-label">Código del Producto *</label>
-                                            <input type="text" class="form-control" name="codigoProducto" 
+                                            <label class="form-label" for="codigoProducto">Código del Producto *</label>
+                                            <input type="text" class="form-control" id="codigoProducto" name="codigoProducto" 
                                                    value="<?php echo $producto_editar ? $producto_editar['cod_producto'] : ''; ?>" 
                                                    <?php echo $producto_editar ? 'readonly' : 'required'; ?>>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Nombre del Producto *</label>
-                                            <input type="text" class="form-control" name="nombreProducto" 
+                                            <label class="form-label" for="nombreProducto">Nombre del Producto *</label>
+                                            <input type="text" class="form-control" id="nombreProducto" name="nombreProducto" 
                                                    value="<?php echo $producto_editar ? $producto_editar['nombre'] : ''; ?>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Precio Costo (S/) *</label>
-                                            <input type="number" class="form-control" name="precioCosto" step="0.01" 
+                                            <label class="form-label" for="precioCosto">Precio Costo (S/) *</label>
+                                            <input type="number" class="form-control" id="precioCosto" name="precioCosto" step="0.01" 
                                                    value="<?php echo $producto_editar ? $producto_editar['precio_costo'] : ''; ?>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Precio Venta (S/) *</label>
-                                            <input type="number" class="form-control" name="precioVenta" step="0.01" 
+                                            <label class="form-label" for="precioVenta">Precio Venta (S/) *</label>
+                                            <input type="number" class="form-control" id="precioVenta" name="precioVenta" step="0.01" 
                                                    value="<?php echo $producto_editar ? $producto_editar['precio_venta'] : ''; ?>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Unidades por Caja *</label>
-                                            <input type="number" class="form-control" name="unidadesCaja" 
+                                            <label class="form-label" for="unidadesCaja">Unidades por Caja *</label>
+                                            <input type="number" class="form-control" id="unidadesCaja" name="unidadesCaja" 
                                                    value="<?php echo $producto_editar ? $producto_editar['unidades_por_caja'] : ''; ?>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Stock *</label>
-                                            <input type="number" class="form-control" name="stockProducto" 
+                                            <label class="form-label" for="stockProducto">Stock *</label>
+                                            <input type="number" class="form-control" id="stockProducto" name="stockProducto" 
                                                    value="<?php echo $producto_editar ? $producto_editar['stock'] : ''; ?>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Categoría *</label>
-                                            <select class="form-select" name="categoriaProducto" required>
+                                            <label class="form-label" for="categoriaProducto">Categoría *</label>
+                                            <select class="form-select" id="categoriaProducto" name="categoriaProducto" required>
                                                 <option value="">Seleccione categoría...</option>
                                                 <?php
                                                 if($result1) {
@@ -313,8 +344,8 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Proveedor *</label>
-                                            <select class="form-select" name="proveedorProducto" required>
+                                            <label class="form-label" for="proveedorProducto">Proveedor *</label>
+                                            <select class="form-select" id="proveedorProducto" name="proveedorProducto" required>
                                                 <option value="">Seleccione proveedor...</option>
                                                 <?php
                                                 if($result2) {
@@ -469,8 +500,8 @@
             </div>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Funciones JavaScript
         function cerrarTurno() {
@@ -547,6 +578,178 @@
         // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Sistema de gestión de productos cargado');
+        });
+        
+        document.getElementById("formProducto").addEventListener("submit",function(event){
+            const codprod=document.getElementById("codigoProducto").value.trim();
+            const nomprod=document.getElementById("nombreProducto").value.trim();
+            const unicajaprod=document.getElementById("unidadesCaja").value.trim();
+            const precosprod=document.getElementById("precioCosto").value.trim();
+            const prevenprod=document.getElementById("precioVenta").value.trim();
+            const stockprod=document.getElementById("stockProducto").value.trim();
+
+
+            if(codprod===""){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El código no puede estar vacío",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            } else if(codprod.length>10){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El código debe ser menor de 10 dígitos",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            }
+
+            const regexunistock=/^\d+$/;
+
+            if(unicajaprod===""){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "Las unidades por caja no pueden estar vacía",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            } else if(!regexunistock.test(unicajaprod)){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "Las unidades por caja deben ser solamente numérico",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            } else if(parseInt(unicajaprod)<1){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "No pueden haber menos de 1 unidad en una caja",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            }
+
+            const regexnom = /^[A-Z][a-zA-ZáéíóúÁÉÍÓÚÑñ\s]+$/;
+
+            if(nomprod===""){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El nombre no puede estar vacío",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            } else if(!regexnom.test(nomprod)){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El nombre debe empezar con mayúscula y contener solo letras",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            }
+
+            const regexpre=/^\d{1,10}(\.\d{1,2})?$/
+
+            if(precosprod===" "){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El precio de costo no puede estar vacío",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            } else if(!regexpre.test(precosprod)){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "Formato inválido. Por ejemplo: 1234567890.12 ",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            } else if(parseFloat(precosprod)<0){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El precio de costo no puede ser negativo",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            }
+
+            if(prevenprod===""){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El precio de venta no puede estar vacío",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            } else if(!regexpre.test(prevenprod)){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "Formato inválido. Por ejemplo: 1234567890.12 ",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            } else if(parseFloat(prevenprod)<0){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El precio de venta no puede ser negativo",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            }
+
+            if(stockprod===""){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El stock no puede estar vacío",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            } else if(!regexunistock.test(stockprod)){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El stock debe ser solamente numérico",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            } else if(parseInt(stockprod)<0){
+                Swal.fire({
+                    icon: "warning",
+                    title: "Oops...",
+                    text: "El stock no puede ser menor negativo",
+                    width: "350px",
+                });
+                event.preventDefault();
+                return;
+            }
         });
     </script>
 </body>

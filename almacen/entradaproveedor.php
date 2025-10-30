@@ -223,8 +223,8 @@
                         $cantidad_final=$cantidad_unidades;
 
                         // 6. Insertar en registroinventario
-                        $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total) 
-                                           VALUES ('$cod_inventario', '$cod_usuario', '$fecha_entrada', '$cod_producto', '$cod_tipomovimiento', $cantidad_unidades, $precio_unitario, $total)";
+                        $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total, cantidad_final,total_final) 
+                                           VALUES ('$cod_inventario', '$cod_usuario', '$fecha_entrada', '$cod_producto', '$cod_tipomovimiento', $cantidad_unidades, $precio_unitario, $total,$cantidad_final,$total)";
                         
                         if(!pg_query($conexion, $query_inventario)) {
                             throw new Exception("Error al insertar en registro inventario: " . pg_last_error($conexion));
