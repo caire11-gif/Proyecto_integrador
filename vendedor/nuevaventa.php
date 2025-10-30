@@ -121,6 +121,14 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
                     throw new Exception("Error al actualizar stock para {$producto['nombre']}: " . pg_last_error($conexion));
                 }
                 
+                $cod_inventario = 'INV' . $timestamp . $index;
+                $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total) 
+                                           VALUES ('$cod_inventario', '$cod_usuario', CURRENT_DATE, '{$producto['codigo']}', 'TM002', '{$producto['cantidad']}', '{$producto['precio']}', '{$producto['total']}')";
+                        
+                if(!pg_query($conexion, $query_inventario)) {
+                    throw new Exception("Error al insertar en registro inventario: " . pg_last_error($conexion));
+                }
+
                 // Registrar movimiento de inventario
                 $cod_movimiento = 'MOV' . $timestamp . $index;
                 $queryMovimiento = "INSERT INTO movimiento (cod_movimiento, cod_producto, cod_tipomovimiento, fecha_movimiento, cod_usuario, observacion) 
