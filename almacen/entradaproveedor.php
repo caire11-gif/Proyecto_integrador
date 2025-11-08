@@ -10,9 +10,24 @@
     <link rel="stylesheet" href="css/almacen-boton/boton.css">
 </head>
 <body>
-    <?php include('../login/ingresarlogin.php') ?>
     <?php
-    $cod_usuario='USU001';
+        $conexion = pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
+        if(!$conexion){
+            echo "Un error de conexión ocurrió.";
+            exit;
+        }
+
+        session_start();
+        $usuarioencargado=$_SESSION['nombreusuarioencargado'];
+        $apellidoencargado=$_SESSION['apellidousuarioencargado'];
+
+        $inicialNombre = substr($usuarioencargado, 0, 1);
+        $inicialApellido=substr($apellidoencargado,0,1);
+
+        if (!isset($_SESSION['nombreusuarioencargado'])) {
+            header("Location: ../login.php");
+            exit;
+        }
 
         // Inicializar variables con valores por defecto
         $precios_productos = array();
@@ -89,6 +104,15 @@
                 $insert_ta = pg_query($conexion, "INSERT INTO tipoaccion (cod_tipoaccion, nombre) VALUES ('ACC001', 'Registro')");
             }
 
+            // Usuario
+            $result_u = pg_query($conexion, "SELECT cod_usuario FROM usuario LIMIT 1");
+            if($result_u && pg_num_rows($result_u) > 0) {
+                $row = pg_fetch_assoc($result_u);
+                $cod_usuario = $row['cod_usuario'];
+            } else {
+                $cod_usuario = 'USER001'; // Valor por defecto más común
+            }
+
             // CORRECCIÓN: CONSULTA para historial - COMPRAS AGRUPADAS con filtros - cambiar pr.nombre por pr.razon_social
             $query_historial = "SELECT 
                                 c.cod_compra,
@@ -141,6 +165,29 @@
             return substr($prefijo, 0, 3) . $numero;
         }
 
+        // Función para obtener el siguiente ID secuencial de inventario
+        function obtenerSiguienteIdInventario($conexion) {
+            // Consultar el máximo ID actual en registroinventario
+            $result = pg_query($conexion, "SELECT MAX(cod_inventario) as max_id FROM registroinventario");
+            if ($result && pg_num_rows($result) > 0) {
+                $row = pg_fetch_assoc($result);
+                $max_id = $row['max_id'];
+                
+                if ($max_id && preg_match('/INV(\d+)/', $max_id, $matches)) {
+                    // Si hay IDs existentes, incrementar el número
+                    $next_number = intval($matches[1]) + 1;
+                } else {
+                    // Si no hay IDs existentes, empezar desde 1
+                    $next_number = 1;
+                }
+                
+                return 'INV' . $next_number;
+            }
+            
+            // En caso de error, devolver INV1
+            return 'INV1';
+        }
+
         // Procesar el formulario cuando se envía
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
@@ -163,6 +210,10 @@
                 if(empty($productos) || count(array_filter($productos)) == 0) {
                     throw new Exception("Debe agregar al menos un producto");
                 }
+
+                // Obtener el siguiente ID de inventario secuencial
+                $primer_id_inventario = obtenerSiguienteIdInventario($conexion);
+                $numero_actual = intval(str_replace('INV', '', $primer_id_inventario));
 
                 // 1. GENERAR UN SOLO CÓDIGO DE COMPRA PARA TODOS LOS PRODUCTOS
                 $cod_compra = generarCodigo('COM');
@@ -199,7 +250,11 @@
 
                         // Generar código único para cada detalle
                         $cod_detallecompra = generarCodigo('DET' . $index);
-                        $cod_inventario = generarCodigo('INV' . $index);
+                        
+                        // USAR ID SECUENCIAL PARA INVENTARIO - incrementar para cada producto
+                        $cod_inventario = 'INV' . $numero_actual;
+                        $numero_actual++;
+                        
                         $cod_movimiento = generarCodigo('MOV' . $index);
                         $cod_historial = generarCodigo('HIS' . $index);
                         
@@ -280,9 +335,9 @@
                 </div>
 
                 <div class="nav flex-column mt-3">
-                    <a href="dashboard.html" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
-                    <a href="gestionproductos.html" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
-                    <a href="almacenproveedores.html" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
+                    <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="gestionproductos.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
+                    <a href="almacenproveedores.php" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
                     <a href="entradaproveedor.php" class="nav-link active"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
                     <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
                     <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
@@ -304,7 +359,7 @@
                                 <span class="arrow" id="arrow">▲</span>
                             </button>
                             <ul class="dropdown-list" id="dropdownList">
-                                <a href="../login.html" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                                <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                             </ul>
                         </div>
                     </div> 
@@ -590,7 +645,6 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" @click="generarPdf()">Descargar</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
@@ -598,7 +652,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/usuario.js"></script>
     <script>
         // Array con precios de productos (se llena con PHP)
         const preciosProductos = <?php echo json_encode($precios_productos); ?>;
@@ -811,12 +864,6 @@
             arrow.style.transform = "rotate(0deg)";
         }
     });
-    </script>
-    <script setup>
-        import {convertHtmlPdf} from  'js/descarga.js'
-        const generarPdf=()=>{
-            convertHtmlPdf('detallesCompraContent')
-        }
     </script>
 </body>
 </html>

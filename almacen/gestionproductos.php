@@ -27,7 +27,7 @@
         $inicialApellido=substr($apellidoencargado,0,1);
 
         if (!isset($_SESSION['nombreusuarioencargado'])) {
-            header("Location: ../login.html");
+            header("Location: ../login.php");
             exit;
         }
 

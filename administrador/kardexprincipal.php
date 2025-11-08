@@ -10,18 +10,20 @@
     <link rel="stylesheet" href="css/administrador-estilo.css">
     <link rel="stylesheet" href="css/administrador-boton/boton.css">
     <style>
-        .bg-success-light {
-            background-color: #d4edda !important;
-        }
-        .bg-danger-light {
-            background-color: #f8d7da !important;
-        }
-        .bg-primary-light {
-            background-color: #cce7ff !important;
-        }
-        .table th {
-            vertical-align: middle;
-        }
+        .bg-success-light { background-color: #d4edda !important; }
+        .bg-danger-light { background-color: #f8d7da !important; }
+        .bg-primary-light { background-color: #cce7ff !important; }
+        .table th { vertical-align: middle; }
+        .kardex-table { font-size: 0.8rem; }
+        .kardex-table th, .kardex-table td { padding: 0.3rem; text-align: center; }
+        .entrada-row { background-color: #f8fff8; }
+        .salida-row { background-color: #fff8f8; }
+        .saldo-unitario { font-weight: bold; color: #007bff; }
+        .error-stock { background-color: #ffe6e6; color: #d63031; }
+        .lote-separado { border-bottom: 1px dashed #ccc; padding: 2px 0; display: flex; justify-content: space-between; }
+        .lote-total { border-top: 1px solid #333; font-weight: bold; padding: 2px 0; display: flex; justify-content: space-between; }
+        .lote-cantidad { text-align: left; }
+        .lote-costo { text-align: right; }
     </style>
 </head>
 <body>
@@ -43,111 +45,273 @@
         exit;
     }
 
-    // CORRECCIÓN: Obtener productos con código y nombre
+    // Obtener productos
     $result1 = pg_query($conexion, "SELECT cod_producto, nombre FROM producto");
-    if(!$result1){
-        echo "Error al seleccionar los productos.";
-    }
+    if(!$result1) echo "Error al seleccionar los productos.";
 
-    // CORRECCIÓN: Obtener tipos de movimiento con código y nombre
+    // Obtener tipos de movimiento
     $result2 = pg_query($conexion, "SELECT cod_tipomovimiento, nombre FROM tipomovimiento");
-    if(!$result2){
-        echo "Error al seleccionar el tipo de movimiento.";
-    }
-    
-    // OBTENER TODOS LOS MOVIMIENTOS EN ORDEN ASCENDENTE PARA CALCULAR SALDOS
-    // CORRECCIÓN: Usar códigos reales que existan en la base de datos
-    $result_todos_movimientos = pg_query($conexion, "SELECT 
-                                ri.fecha_inventario AS fecha,
-                                ri.cod_inventario,
-                                p.nombre AS producto_nombre,
-                                p.cod_producto AS producto_codigo,
-                                p.precio_caja AS precio_costo_producto,
-                                p.unidades_por_caja,
-                                tm.nombre AS tipomovimiento_nombre,
-                                tm.cod_tipomovimiento AS tipomovimiento_codigo,
-                                u.usuario AS usuario_nombre,
-                                ri.cantidad AS cantidad,
-                                ri.precio_unitario AS precio_unitario_calculado,
-                                ri.total AS total
-                            FROM registroinventario ri
-                            JOIN producto p ON ri.cod_producto = p.cod_producto
-                            JOIN tipomovimiento tm ON ri.cod_tipomovimiento = tm.cod_tipomovimiento
-                            JOIN usuario u ON ri.cod_usuario = u.cod_usuario
-                            ORDER BY p.cod_producto, ri.fecha_inventario ASC, ri.cod_inventario ASC");
+    if(!$result2) echo "Error al seleccionar el tipo de movimiento.";
 
-    // CALCULAR SALDOS HISTÓRICOS PARA CADA MOVIMIENTO
-    $movimientos_con_saldo_historico = [];
-    $saldos_acumulados = [];
-
-    if($result_todos_movimientos && pg_num_rows($result_todos_movimientos) > 0) {
-        while($row = pg_fetch_assoc($result_todos_movimientos)) {
-            $cod_producto = $row['producto_codigo'];
+    // FUNCIÓN MEJORADA - AGRUPAR LOTES CON EL MISMO COSTO
+    function procesarProductoKardex($conexion, $cod_producto) {
+        // Obtener movimientos del producto ordenados por fecha e ID
+        $query = "SELECT 
+                    ri.fecha_inventario AS fecha,
+                    tm.nombre AS tipomovimiento_nombre,
+                    tm.cod_tipomovimiento,
+                    ri.cantidad AS cantidad,
+                    ri.precio_unitario AS precio_unitario,
+                    ri.total AS total_movimiento,
+                    u.usuario AS usuario_nombre,
+                    ri.cod_inventario
+                FROM registroinventario ri
+                JOIN tipomovimiento tm ON ri.cod_tipomovimiento = tm.cod_tipomovimiento
+                JOIN usuario u ON ri.cod_usuario = u.cod_usuario
+                WHERE ri.cod_producto = '$cod_producto'
+                ORDER BY ri.fecha_inventario ASC, ri.cod_inventario ASC";
+        
+        $result = pg_query($conexion, $query);
+        $movimientos = [];
+        
+        if($result && pg_num_rows($result) > 0) {
+            while($row = pg_fetch_assoc($result)) {
+                $movimientos[] = $row;
+            }
+        }
+        
+        // INICIALIZAR KARDEX
+        $kardex = [];
+        $lotes = []; // Array de lotes separados
+        $lote_id_counter = 1;
+        $saldo_cantidad = 0;
+        $saldo_costo_total = 0;
+        
+        // PROCESAR MOVIMIENTOS EN ORDEN CRONOLÓGICO
+        foreach($movimientos as $mov) {
+            $es_entrada = stripos($mov['tipomovimiento_nombre'], 'entrada') !== false;
+            $es_salida = stripos($mov['tipomovimiento_nombre'], 'salida') !== false;
             
-            // INICIALIZAR SALDO SI ES LA PRIMERA VEZ QUE VEMOS ESTE PRODUCTO
-            if(!isset($saldos_acumulados[$cod_producto])) {
-                $saldos_acumulados[$cod_producto] = [
-                    'unidades' => 0,
-                    'costo_total' => 0
+            if($es_entrada) {
+                // VERIFICAR SI YA EXISTE UN LOTE CON EL MISMO PRECIO
+                $lote_existente_index = null;
+                foreach($lotes as $index => $lote) {
+                    if($lote['costo_unitario'] == $mov['precio_unitario']) {
+                        $lote_existente_index = $index;
+                        break;
+                    }
+                }
+                
+                if($lote_existente_index !== null) {
+                    // AUMENTAR LOTE EXISTENTE CON EL MISMO PRECIO
+                    $lotes[$lote_existente_index]['cantidad'] += $mov['cantidad'];
+                    $detalle_lote = "Mismo lote: +{$mov['cantidad']} und a S/ " . number_format($mov['precio_unitario'], 2);
+                } else {
+                    // CREAR NUEVO LOTE CON NUEVO PRECIO
+                    $nuevo_lote = [
+                        'id' => $lote_id_counter++,
+                        'cantidad' => $mov['cantidad'], 
+                        'costo_unitario' => $mov['precio_unitario'],
+                        'fecha_entrada' => $mov['fecha'],
+                        'cod_inventario' => $mov['cod_inventario']
+                    ];
+                    
+                    $lotes[] = $nuevo_lote;
+                    $detalle_lote = "Nuevo lote: {$mov['cantidad']} und a S/ " . number_format($mov['precio_unitario'], 2);
+                }
+                
+                // Calcular nuevo saldo (ACUMULADO)
+                $saldo_cantidad += $mov['cantidad'];
+                $saldo_costo_total += $mov['total_movimiento'];
+                
+                // Preparar la visualización de lotes para el saldo - AGRUPANDO POR PRECIO
+                $saldo_unidades_html = "";
+                $saldo_costos_html = "";
+                
+                // Agrupar lotes por costo unitario
+                $lotes_agrupados = [];
+                foreach($lotes as $lote) {
+                    if($lote['cantidad'] > 0) {
+                        $costo_key = (string)$lote['costo_unitario'];
+                        if(!isset($lotes_agrupados[$costo_key])) {
+                            $lotes_agrupados[$costo_key] = [
+                                'cantidad_total' => 0,
+                                'costo_unitario' => $lote['costo_unitario']
+                            ];
+                        }
+                        $lotes_agrupados[$costo_key]['cantidad_total'] += $lote['cantidad'];
+                    }
+                }
+                
+                // Mostrar lotes agrupados
+                foreach($lotes_agrupados as $lote_agrupado) {
+                    $saldo_unidades_html .= "<div class='lote-separado'><span class='lote-cantidad'>{$lote_agrupado['cantidad_total']} und</span></div>";
+                    $saldo_costos_html .= "<div class='lote-separado'><span class='lote-costo'>S/ " . number_format($lote_agrupado['costo_unitario'], 2) . "</span></div>";
+                }
+                
+                $kardex[] = [
+                    'fecha' => $mov['fecha'],
+                    'tipo' => 'ENTRADA',
+                    'usuario' => $mov['usuario_nombre'],
+                    'entradas_cantidad' => $mov['cantidad'],
+                    'entradas_costo_unitario' => $mov['precio_unitario'],
+                    'entradas_costo_total' => $mov['total_movimiento'],
+                    'salidas_cantidad' => 0,
+                    'salidas_costo_unitario' => 0,
+                    'salidas_costo_total' => 0,
+                    'saldo_cantidad' => $saldo_cantidad,
+                    'saldo_costo_unitario' => $mov['precio_unitario'], // Último costo
+                    'saldo_costo_total' => $saldo_costo_total,
+                    'saldo_unidades_html' => $saldo_unidades_html,
+                    'saldo_costos_html' => $saldo_costos_html,
+                    'detalle_lotes' => $detalle_lote,
+                    'lotes_actuales' => count($lotes)
+                ];
+                
+            } else if($es_salida) {
+                // APLICAR MÉTODO PEPS - consumir de los lotes más antiguos primero
+                $cantidad_restante = $mov['cantidad'];
+                $costo_total_salida = 0;
+                $detalle_salida = [];
+                
+                // Ordenar lotes por fecha de entrada (más antiguos primero)
+                usort($lotes, function($a, $b) {
+                    $dateCompare = strtotime($a['fecha_entrada']) - strtotime($b['fecha_entrada']);
+                    if ($dateCompare == 0) {
+                        return $a['id'] - $b['id'];
+                    }
+                    return $dateCompare;
+                });
+                
+                // Consumir de los lotes más antiguos
+                foreach($lotes as $index => &$lote) {
+                    if($cantidad_restante <= 0) break;
+                    
+                    if($lote['cantidad'] > 0) {
+                        $cantidad_usar = min($lote['cantidad'], $cantidad_restante);
+                        $costo_lote = $cantidad_usar * $lote['costo_unitario'];
+                        
+                        $costo_total_salida += $costo_lote;
+                        $lote['cantidad'] -= $cantidad_usar;
+                        $cantidad_restante -= $cantidad_usar;
+                        
+                        $detalle_salida[] = "Lote #{$lote['id']}: {$cantidad_usar} und a S/ " . number_format($lote['costo_unitario'], 2);
+                    }
+                }
+                
+                // Eliminar lotes vacíos
+                $lotes = array_filter($lotes, function($lote) {
+                    return $lote['cantidad'] > 0;
+                });
+                $lotes = array_values($lotes);
+                
+                // Verificar si hay suficiente stock
+                $error_stock = false;
+                if($cantidad_restante > 0) {
+                    $error_stock = true;
+                    $detalle_salida = ["ERROR: Stock insuficiente - Faltan {$cantidad_restante} unidades"];
+                    $costo_total_salida = 0;
+                } else {
+                    // Calcular nuevo saldo después de la salida
+                    $saldo_cantidad -= $mov['cantidad'];
+                    $saldo_costo_total -= $costo_total_salida;
+                }
+                
+                // Preparar la visualización de lotes para el saldo después de la salida - AGRUPANDO POR PRECIO
+                $saldo_unidades_html = "";
+                $saldo_costos_html = "";
+                $ultimo_costo = 0;
+                
+                // Agrupar lotes por costo unitario
+                $lotes_agrupados = [];
+                foreach($lotes as $lote) {
+                    if($lote['cantidad'] > 0) {
+                        $costo_key = (string)$lote['costo_unitario'];
+                        if(!isset($lotes_agrupados[$costo_key])) {
+                            $lotes_agrupados[$costo_key] = [
+                                'cantidad_total' => 0,
+                                'costo_unitario' => $lote['costo_unitario']
+                            ];
+                        }
+                        $lotes_agrupados[$costo_key]['cantidad_total'] += $lote['cantidad'];
+                        $ultimo_costo = $lote['costo_unitario']; // Tomar el último costo
+                    }
+                }
+                
+                // Mostrar lotes agrupados
+                foreach($lotes_agrupados as $lote_agrupado) {
+                    $saldo_unidades_html .= "<div class='lote-separado'><span class='lote-cantidad'>{$lote_agrupado['cantidad_total']} und</span></div>";
+                    $saldo_costos_html .= "<div class='lote-separado'><span class='lote-costo'>S/ " . number_format($lote_agrupado['costo_unitario'], 2) . "</span></div>";
+                }
+                
+                if(empty($lotes_agrupados)) {
+                    $saldo_unidades_html = "<div>0 und</div>";
+                    $saldo_costos_html = "<div>S/ 0.00</div>";
+                }
+                
+                $salidas_costo_unitario = $mov['cantidad'] > 0 ? $costo_total_salida / $mov['cantidad'] : 0;
+                
+                $kardex[] = [
+                    'fecha' => $mov['fecha'],
+                    'tipo' => 'SALIDA',
+                    'usuario' => $mov['usuario_nombre'],
+                    'entradas_cantidad' => 0,
+                    'entradas_costo_unitario' => 0,
+                    'entradas_costo_total' => 0,
+                    'salidas_cantidad' => $mov['cantidad'],
+                    'salidas_costo_unitario' => $error_stock ? 0 : $salidas_costo_unitario,
+                    'salidas_costo_total' => $error_stock ? 0 : $costo_total_salida,
+                    'saldo_cantidad' => $error_stock ? $kardex[count($kardex)-1]['saldo_cantidad'] : $saldo_cantidad,
+                    'saldo_costo_unitario' => $error_stock ? $kardex[count($kardex)-1]['saldo_costo_unitario'] : $ultimo_costo,
+                    'saldo_costo_total' => $error_stock ? $kardex[count($kardex)-1]['saldo_costo_total'] : $saldo_costo_total,
+                    'saldo_unidades_html' => $error_stock ? $kardex[count($kardex)-1]['saldo_unidades_html'] : $saldo_unidades_html,
+                    'saldo_costos_html' => $error_stock ? $kardex[count($kardex)-1]['saldo_costos_html'] : $saldo_costos_html,
+                    'detalle_lotes' => implode(' + ', $detalle_salida),
+                    'error_stock' => $error_stock,
+                    'lotes_actuales' => count($lotes)
                 ];
             }
-            
-            // CALCULAR COSTO TOTAL CORRECTO
-            $costo_total_movimiento = $row['total'];
-            
-            // DETERMINAR SI ES ENTRADA O SALIDA BASADO EN EL NOMBRE DEL MOVIMIENTO
-            $es_entrada = stripos($row['tipomovimiento_nombre'], 'entrada') !== false;
-            $es_salida = stripos($row['tipomovimiento_nombre'], 'salida') !== false;
-            
-            // CALCULAR NUEVO SALDO SEGÚN EL TIPO DE MOVIMIENTO
-            if($es_entrada) {
-                $saldos_acumulados[$cod_producto]['unidades'] += $row['cantidad'];
-                $saldos_acumulados[$cod_producto]['costo_total'] += $costo_total_movimiento;
-            } else if($es_salida) {
-                $saldos_acumulados[$cod_producto]['unidades'] -= $row['cantidad'];
-                $saldos_acumulados[$cod_producto]['costo_total'] -= $costo_total_movimiento;
+        }
+        
+        return $kardex;
+    }
+
+    // Obtener datos del kardex para todos los productos
+    $productos_kardex = [];
+    
+    $result_productos = pg_query($conexion, "SELECT cod_producto, nombre FROM producto");
+    if($result_productos && pg_num_rows($result_productos) > 0) {
+        while($producto = pg_fetch_assoc($result_productos)) {
+            $kardex_data = procesarProductoKardex($conexion, $producto['cod_producto']);
+            if(!empty($kardex_data)) {
+                $productos_kardex[$producto['cod_producto']] = [
+                    'nombre' => $producto['nombre'],
+                    'kardex' => $kardex_data
+                ];
             }
-            
-            // GUARDAR MOVIMIENTO CON SALDO HISTÓRICO
-            $movimientos_con_saldo_historico[] = [
-                'fecha' => $row['fecha'],
-                'producto_nombre' => $row['producto_nombre'],
-                'producto_codigo' => $row['producto_codigo'],
-                'tipomovimiento_nombre' => $row['tipomovimiento_nombre'],
-                'tipomovimiento_codigo' => $row['tipomovimiento_codigo'],
-                'usuario_nombre' => $row['usuario_nombre'],
-                'cantidad' => $row['cantidad'],
-                'precio_unitario' => $row['precio_unitario_calculado'],
-                'total' => $costo_total_movimiento,
-                'saldo_unidades' => $saldos_acumulados[$cod_producto]['unidades'],
-                'saldo_costo_total' => $saldos_acumulados[$cod_producto]['costo_total'],
-                'es_entrada' => $es_entrada,
-                'es_salida' => $es_salida
-            ];
         }
     }
 
-    // ORDENAR MOVIMIENTOS POR FECHA DESCENDENTE PARA MOSTRAR
-    usort($movimientos_con_saldo_historico, function($a, $b) {
-        return strtotime($b['fecha']) - strtotime($a['fecha']);
-    });
-
-    // CALCULAR ESTADÍSTICAS CORRECTAMENTE
+    // Calcular estadísticas generales
+    $total_movimientos = 0;
     $total_entradas = 0;
     $total_salidas = 0;
     $stock_valorizado = 0;
     
-    // Calcular stock valorizado actual
-    foreach($saldos_acumulados as $saldo) {
-        $stock_valorizado += $saldo['costo_total'];
-    }
-    
-    // Calcular totales de entradas y salidas
-    foreach($movimientos_con_saldo_historico as $mov) {
-        if($mov['es_entrada']) {
-            $total_entradas += $mov['total'];
-        } else if($mov['es_salida']) {
-            $total_salidas += $mov['total'];
+    foreach($productos_kardex as $producto) {
+        $total_movimientos += count($producto['kardex']);
+        
+        if(!empty($producto['kardex'])) {
+            $ultimo_saldo = end($producto['kardex']);
+            $stock_valorizado += $ultimo_saldo['saldo_costo_total'];
+            
+            foreach($producto['kardex'] as $mov) {
+                if($mov['tipo'] == 'ENTRADA') {
+                    $total_entradas += $mov['entradas_costo_total'];
+                } else if($mov['tipo'] == 'SALIDA' && !$mov['error_stock']) {
+                    $total_salidas += $mov['salidas_costo_total'];
+                }
+            }
         }
     }
     ?>
@@ -194,8 +358,9 @@
                 </div>
             </div>
             <br>
+            
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0"><i class="fas fa-chart-line me-2"></i>Kardex Principal</h1>
+                <h1 class="h3 mb-0"><i class="fas fa-chart-line me-2"></i>Kardex Principal <small class="text-muted">(Método PEPS)</small></h1>
                 <div>
                     <button class="btn btn-mad me-2">
                         <i class="fas fa-download me-2"></i>Exportar
@@ -206,6 +371,7 @@
                 </div>
             </div>
 
+            <!-- FILTROS -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
                     <div class="row g-3">
@@ -245,11 +411,12 @@
                 </div>
             </div>
 
+            <!-- ESTADÍSTICAS -->
             <div class="row mb-4">
                 <div class="col-md-3">
                     <div class="card border-0 bg-primary text-white">
                         <div class="card-body text-center">
-                            <h4 class="mb-1"><?php echo count($movimientos_con_saldo_historico); ?></h4>
+                            <h4 class="mb-1"><?php echo $total_movimientos; ?></h4>
                             <small>Total Movimientos</small>
                         </div>
                     </div>
@@ -280,105 +447,124 @@
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light border-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 text-primary"><i class="fas fa-list-alt me-2"></i>Registro de Movimientos</h5>
-                        <span class="badge bg-primary" id="movementCount"><?php echo count($movimientos_con_saldo_historico); ?> movimientos</span>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-bordered text-center align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th rowspan="2" class="bg-light">Fecha</th>
-                                    <th rowspan="2" class="bg-light">Usuario</th>
-                                    <th rowspan="2" class="bg-light">Producto</th>
-                                    <th colspan="3" class="bg-success text-white">Entradas</th>
-                                    <th colspan="3" class="bg-danger text-white">Salidas</th>
-                                    <th colspan="2" class="bg-primary text-white">Saldo Final</th>
-                                </tr>
-                                <tr>
-                                    <th class="bg-success-light">Unidades</th>
-                                    <th class="bg-success-light">Costo Unit.</th>
-                                    <th class="bg-success-light">Costo Total</th>
-
-                                    <th class="bg-danger-light">Unidades</th>
-                                    <th class="bg-danger-light">Costo Unit.</th>
-                                    <th class="bg-danger-light">Costo Total</th>
-
-                                    <th class="bg-primary-light">Unidades</th>
-                                    <th class="bg-primary-light">Costo Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                if(!empty($movimientos_con_saldo_historico)) {
-                                    foreach($movimientos_con_saldo_historico as $mov) {
-                                        if($mov['es_entrada']){
-                                            echo "
-                                            <tr data-producto='{$mov['producto_codigo']}' data-movimiento='{$mov['tipomovimiento_codigo']}' data-fecha='{$mov['fecha']}'>
-                                                <td>{$mov['fecha']}</td>
-                                                <td>{$mov['usuario_nombre']}</td>
+            <!-- KARDEX POR PRODUCTO -->
+            <?php foreach($productos_kardex as $cod_producto => $producto): ?>
+                <?php if(!empty($producto['kardex'])): ?>
+                    <div class="card border-0 shadow-sm mb-4 product-kardex" data-producto="<?php echo $cod_producto; ?>">
+                        <div class="card-header bg-light border-0">
+                            <h5 class="mb-0 text-primary">
+                                <i class="fas fa-cube me-2"></i><?php echo $producto['nombre']; ?>
+                                <small class="text-muted">(<?php echo $cod_producto; ?>)</small>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- TABLA KARDEX - MOVIMIENTOS EN ORDEN DE REGISTRO -->
+                            <div class="table-responsive kardex-table">
+                                <table class="table table-bordered table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th rowspan="2">FECHA</th>
+                                            <th rowspan="2">USUARIO</th>
+                                            <th colspan="3" class="text-center">ENTRADAS</th>
+                                            <th colspan="3" class="text-center">SALIDAS</th>
+                                            <th colspan="3" class="text-center">SALDO FINAL</th>
+                                        </tr>
+                                        <tr>
+                                            <th>CANTIDAD</th>
+                                            <th>COSTO UNIT.</th>
+                                            <th>COSTO TOTAL</th>
+                                            <th>CANTIDAD</th>
+                                            <th>COSTO UNIT.</th>
+                                            <th>COSTO TOTAL</th>
+                                            <th>UNIDADES</th>
+                                            <th>COSTO UNIT.</th>
+                                            <th>COSTO TOTAL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach($producto['kardex'] as $mov): ?>
+                                            <tr class="<?php echo $mov['tipo'] == 'ENTRADA' ? 'entrada-row' : ($mov['error_stock'] ? 'error-stock' : 'salida-row'); ?>">
+                                                <td><strong><?php echo $mov['fecha']; ?></strong></td>
+                                                <td><small><?php echo $mov['usuario']; ?></small></td>
+                                                
+                                                <!-- ENTRADAS -->
                                                 <td>
-                                                    <div class='fw-bold text-primary'>{$mov['producto_nombre']}</div>
-                                                    <small class='text-muted'>{$mov['producto_codigo']}</small>
+                                                    <?php if($mov['entradas_cantidad'] > 0): ?>
+                                                        <strong class="text-success"><?php echo $mov['entradas_cantidad']; ?></strong>
+                                                    <?php else: ?>
+                                                        -
+                                                    <?php endif; ?>
                                                 </td>
-                                                <td class='text-success fw-bold'>{$mov['cantidad']}</td>
-                                                <td>S/ " . number_format($mov['precio_unitario'], 2) . "</td>
-                                                <td class='fw-bold'>S/ " . number_format($mov['total'], 2) . "</td>
-                                                <td>-</td>
-                                                <td>-</td>
-                                                <td>-</td>
-                                                <td class='fw-bold text-primary'>{$mov['saldo_unidades']}</td>
-                                                <td class='fw-bold text-primary'>S/ " . number_format($mov['saldo_costo_total'], 2) . "</td>
-                                            </tr>
-                                            ";
-                                            
-                                        } else if($mov['es_salida']){
-                                            echo "
-                                            <tr data-producto='{$mov['producto_codigo']}' data-movimiento='{$mov['tipomovimiento_codigo']}' data-fecha='{$mov['fecha']}'>
-                                                <td>{$mov['fecha']}</td>
-                                                <td>{$mov['usuario_nombre']}</td>
                                                 <td>
-                                                    <div class='fw-bold text-primary'>{$mov['producto_nombre']}</div>
-                                                    <small class='text-muted'>{$mov['producto_codigo']}</small>
+                                                    <?php if($mov['entradas_cantidad'] > 0): ?>
+                                                        S/ <?php echo number_format($mov['entradas_costo_unitario'], 2); ?>
+                                                    <?php else: ?>
+                                                        -
+                                                    <?php endif; ?>
                                                 </td>
-                                                <td>-</td>
-                                                <td>-</td>
-                                                <td>-</td>
-                                                <td class='text-danger fw-bold'>{$mov['cantidad']}</td>
-                                                <td>S/ " . number_format($mov['precio_unitario'], 2) . "</td>
-                                                <td class='fw-bold'>S/ " . number_format($mov['total'], 2) . "</td>
-                                                <td class='fw-bold text-primary'>{$mov['saldo_unidades']}</td>
-                                                <td class='fw-bold text-primary'>S/ " . number_format($mov['saldo_costo_total'], 2) . "</td>
+                                                <td>
+                                                    <?php if($mov['entradas_cantidad'] > 0): ?>
+                                                        <strong>S/ <?php echo number_format($mov['entradas_costo_total'], 2); ?></strong>
+                                                    <?php else: ?>
+                                                        -
+                                                    <?php endif; ?>
+                                                </td>
+                                                
+                                                <!-- SALIDAS -->
+                                                <td>
+                                                    <?php if($mov['salidas_cantidad'] > 0): ?>
+                                                        <strong class="text-danger"><?php echo $mov['salidas_cantidad']; ?></strong>
+                                                    <?php else: ?>
+                                                        -
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if($mov['salidas_cantidad'] > 0 && !$mov['error_stock']): ?>
+                                                        S/ <?php echo number_format($mov['salidas_costo_unitario'], 2); ?>
+                                                    <?php else: ?>
+                                                        -
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if($mov['salidas_cantidad'] > 0 && !$mov['error_stock']): ?>
+                                                        <strong>S/ <?php echo number_format($mov['salidas_costo_total'], 2); ?></strong>
+                                                    <?php else: ?>
+                                                        -
+                                                    <?php endif; ?>
+                                                </td>
+                                                
+                                                <!-- SALDO FINAL - MOSTRANDO LOTES AGRUPADOS POR PRECIO -->
+                                                <td>
+                                                    <?php if(isset($mov['saldo_unidades_html'])): ?>
+                                                        <?php echo $mov['saldo_unidades_html']; ?>
+                                                    <?php else: ?>
+                                                        <strong class="text-primary"><?php echo $mov['saldo_cantidad']; ?></strong>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if(isset($mov['saldo_costos_html'])): ?>
+                                                        <?php echo $mov['saldo_costos_html']; ?>
+                                                    <?php else: ?>
+                                                        <strong class="saldo-unitario">S/ <?php echo number_format($mov['saldo_costo_unitario'], 2); ?></strong>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <strong class="text-primary">S/ <?php echo number_format($mov['saldo_costo_total'], 2); ?></strong>
+                                                </td>
                                             </tr>
-                                            ";
-                                        }               
-                                    }
-                                } else {
-                                    echo "<tr><td colspan='11' class='text-center py-4'>No hay movimientos registrados</td></tr>";
-                                }
-                                ?>
-                            </tbody>
-                        </table>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-            
-                    <nav>
-                        <ul class="pagination justify-content-center mt-4">
-                            <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
-                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                            <li class="page-item"><a class="page-link" href="#">2</a></li>
-                            <li class="page-item"><a class="page-link" href="#">3</a></li>
-                            <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
-                        </ul>
-                    </nav>
-                </div>
-            </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
         </div>
     </div>
+
     <script>
+    // ... (código JavaScript para filtros) ...
     const dropdownBtn = document.getElementById("dropdownBtn");
     const dropdownList = document.getElementById("dropdownList");
     const arrow = document.getElementById("arrow");
@@ -389,7 +575,6 @@
         arrow.style.transform = isVisible ? "rotate(0deg)" : "rotate(180deg)";
     });
                             
-    // Cierra el menú si haces clic fuera
     document.addEventListener("click", (e) => {
         if (!dropdownBtn.contains(e.target) && !dropdownList.contains(e.target)) {
             dropdownList.style.display = "none";
@@ -397,79 +582,26 @@
         }
     });
 
-    // Filtros mejorados
+    // Filtros para kardex
     document.addEventListener('DOMContentLoaded', function() {
         const productFilter = document.getElementById('productFilter');
-        const movementType = document.getElementById('movementType');
-        const dateFrom = document.getElementById('dateFrom');
-        const dateTo = document.getElementById('dateTo');
-        const btnResetFilters = document.getElementById('btnResetFilters');
-        const tableRows = document.querySelectorAll('tbody tr');
-        const movementCount = document.getElementById('movementCount');
+        const kardexCards = document.querySelectorAll('.product-kardex');
 
         function aplicarFiltros() {
             const productoVal = productFilter.value;
-            const movimientoVal = movementType.value;
-            const fechaDesde = dateFrom.value;
-            const fechaHasta = dateTo.value;
 
-            let visibleCount = 0;
-
-            tableRows.forEach(row => {
-                if (row.cells.length < 10) return;
-
-                const productoData = row.getAttribute('data-producto');
-                const movimientoData = row.getAttribute('data-movimiento');
-                const fechaData = row.getAttribute('data-fecha');
-
-                let mostrar = true;
-
-                // Filtro por producto
-                if (productoVal && productoData !== productoVal) {
-                    mostrar = false;
-                }
-
-                // Filtro por tipo de movimiento
-                if (movimientoVal && movimientoData !== movimientoVal) {
-                    mostrar = false;
-                }
-
-                // Filtro por fecha
-                if (fechaDesde && fechaData < fechaDesde) {
-                    mostrar = false;
-                }
-
-                if (fechaHasta && fechaData > fechaHasta) {
-                    mostrar = false;
-                }
-
-                row.style.display = mostrar ? '' : 'none';
+            kardexCards.forEach(card => {
+                const productoData = card.getAttribute('data-producto');
                 
-                if (mostrar) {
-                    visibleCount++;
+                if (productoVal && productoData !== productoVal) {
+                    card.style.display = 'none';
+                } else {
+                    card.style.display = 'block';
                 }
             });
-
-            // Actualizar contador
-            movementCount.textContent = visibleCount + ' movimientos';
-        }
-
-        function resetearFiltros() {
-            productFilter.selectedIndex = 0;
-            movementType.selectedIndex = 0;
-            dateFrom.value = '';
-            dateTo.value = '';
-            aplicarFiltros();
         }
 
         productFilter.addEventListener('change', aplicarFiltros);
-        movementType.addEventListener('change', aplicarFiltros);
-        dateFrom.addEventListener('change', aplicarFiltros);
-        dateTo.addEventListener('change', aplicarFiltros);
-        btnResetFilters.addEventListener('click', resetearFiltros);
-
-        // Aplicar filtros inicialmente
-        aplicarFiltros();
     });
     </script>
 </body>
