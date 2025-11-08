@@ -3,3 +3,26 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     transition: all 0.4s ease;
 }
+
+.lista-personal {
+    max-height: 180px;  /* 👈 Ajusta esta altura según necesites */
+    overflow-y: auto;   /* 👈 Activa el scroll vertical */
+    padding-right: 5px;
+}
+
+.lista-personal::-webkit-scrollbar {
+    width: 6px;
+}
+
+.lista-personal::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.personal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding: 8px 0;
+}

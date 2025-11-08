@@ -27,31 +27,33 @@
         $inicialApellido=substr($apellidoencargado,0,1);
 
         if (!isset($_SESSION['nombreusuarioencargado'])) {
-            header("Location: ../login.php");
+            header("Location: ../login.html");
             exit;
         }
 
-        // Obtener categorías y proveedores para los selects
+        // Obtener categorías y proveedores para los selects - CORREGIDO
         $result1 = pg_query($conexion, "SELECT cod_categoria, nombre FROM categoria");
         if(!$result1){
             echo "Error al cargar categorías.";
         }
 
-        $result2 = pg_query($conexion, "SELECT cod_proveedor, nombre FROM proveedor");
+        // CORRECCIÓN: Cambiar 'nombre' por 'razon_social'
+        $result2 = pg_query($conexion, "SELECT cod_proveedor, razon_social FROM proveedor");
         if(!$result2){
             echo "Error al cargar proveedores.";
         }
 
-        // Obtener productos con información de categoría y proveedor
+        // Obtener productos con información de categoría y proveedor - CORREGIDO
         $result3 = pg_query($conexion, "SELECT 
                                         p.cod_producto,
                                         p.nombre AS producto_nombre,
-                                        p.precio_costo,
+                                        p.precio_caja AS precio_costo,
+                                        p.precio_compra_unidad,
                                         p.precio_venta,
                                         p.stock,
                                         p.unidades_por_caja,
                                         c.nombre AS categoria_nombre,
-                                        pro.nombre AS proveedor_nombre,
+                                        pro.razon_social AS proveedor_nombre,
                                         c.cod_categoria,
                                         pro.cod_proveedor
                                     FROM producto p
@@ -62,7 +64,7 @@
             echo "Error al cargar productos.";
         }
 
-        // Procesar el formulario cuando se envía
+        // Procesar el formulario cuando se envía - CORREGIDO
         if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])){
             if($_POST['accion'] === 'insertar'){
                 $codprod = $_POST['codigoProducto'] ?? '';
@@ -88,11 +90,14 @@
                         if($exists > 0) {
                             echo "<script>alert('El código de producto ya existe');</script>";
                         } else {
-                            // Insertar producto
-                            $sql = "INSERT INTO producto (cod_producto, nombre, precio_costo, precio_venta, unidades_por_caja, stock, cod_categoria, cod_proveedor) 
-                                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)";
+                            // CORRECCIÓN: Calcular precio_compra_unidad automáticamente
+                            $precio_compra_unidad = $precio_costo / $unidades_caja;
+
+                            // CORRECCIÓN: Insertar producto con precio_caja y precio_compra_unidad
+                            $sql = "INSERT INTO producto (cod_producto, nombre, precio_caja, precio_compra_unidad, precio_venta, unidades_por_caja, stock, cod_categoria, cod_proveedor) 
+                                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)";
                             $result = pg_query_params($conexion, $sql, array(
-                                $codprod, $nombreprod, $precio_costo, $precio_venta, 
+                                $codprod, $nombreprod, $precio_costo, $precio_compra_unidad, $precio_venta, 
                                 $unidades_caja, $stockprod, $categoria_id, $proveedor_id
                             ));
 
@@ -102,8 +107,8 @@
                                             document.addEventListener('DOMContentLoaded', function(){
                                                 Swal.fire({
                                                     icon: 'success',
-                                                    title: 'Proveedor registrado',
-                                                    text: 'Se registró el proveedor correctamente',
+                                                    title: 'Producto registrado',
+                                                    text: 'Se registró el producto correctamente',
                                                     width: '350px'
                                                 }).then(() => {
                                                     window.location.href = '" . $_SERVER['PHP_SELF'] . "';
@@ -132,18 +137,23 @@
                 $proveedor_id = $_POST['proveedorProducto'] ?? '';
 
                 try {
+                    // CORRECCIÓN: Calcular precio_compra_unidad para la actualización
+                    $precio_compra_unidad = $precio_costo / $unidades_caja;
+
+                    // CORRECCIÓN: Actualizar producto con precio_caja y precio_compra_unidad
                     $sql = "UPDATE producto SET 
                             nombre = $1, 
-                            precio_costo = $2, 
-                            precio_venta = $3, 
-                            unidades_por_caja = $4, 
-                            stock = $5, 
-                            cod_categoria = $6, 
-                            cod_proveedor = $7 
-                            WHERE cod_producto = $8";
+                            precio_caja = $2,
+                            precio_compra_unidad = $3,
+                            precio_venta = $4, 
+                            unidades_por_caja = $5, 
+                            stock = $6, 
+                            cod_categoria = $7, 
+                            cod_proveedor = $8 
+                            WHERE cod_producto = $9";
                     
                     $result = pg_query_params($conexion, $sql, array(
-                        $nombreprod, $precio_costo, $precio_venta, $unidades_caja, 
+                        $nombreprod, $precio_costo, $precio_compra_unidad, $precio_venta, $unidades_caja, 
                         $stockprod, $categoria_id, $proveedor_id, $codprod
                     ));
 
@@ -153,8 +163,8 @@
                                     document.addEventListener('DOMContentLoaded', function(){
                                         Swal.fire({
                                             icon: 'success',
-                                            title: 'Proveedor actualizado',
-                                            text: 'Se actualizó el proveedor correctamente',
+                                            title: 'Producto actualizado',
+                                            text: 'Se actualizó el producto correctamente',
                                             width: '350px'
                                         }).then(() => {
                                             window.location.href = '" . $_SERVER['PHP_SELF'] . "';
@@ -202,8 +212,8 @@
                                             document.addEventListener('DOMContentLoaded', function(){
                                                 Swal.fire({
                                                     icon: 'success',
-                                                    title: 'Proveedor eliminado',
-                                                    text: 'Se eliminó el proveedor correctamente',
+                                                    title: 'Producto eliminado',
+                                                    text: 'Se eliminó el producto correctamente',
                                                     width: '350px'
                                                 }).then(() => {
                                                     window.location.href = '" . $_SERVER['PHP_SELF'] . "';
@@ -316,9 +326,10 @@
                                                    value="<?php echo $producto_editar ? $producto_editar['nombre'] : ''; ?>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label" for="precioCosto">Precio Costo (S/) *</label>
+                                            <label class="form-label" for="precioCosto">Precio Costo (S/) * <small class="text-muted">(Precio por caja)</small></label>
                                             <input type="number" class="form-control" id="precioCosto" name="precioCosto" step="0.01" 
-                                                   value="<?php echo $producto_editar ? $producto_editar['precio_costo'] : ''; ?>" required>
+                                                   value="<?php echo $producto_editar ? $producto_editar['precio_caja'] : ''; ?>" required  
+                                                   oninput="calcularCostoUnitario()">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label" for="precioVenta">Precio Venta (S/) *</label>
@@ -328,7 +339,13 @@
                                         <div class="col-md-6">
                                             <label class="form-label" for="unidadesCaja">Unidades por Caja *</label>
                                             <input type="number" class="form-control" id="unidadesCaja" name="unidadesCaja" 
-                                                   value="<?php echo $producto_editar ? $producto_editar['unidades_por_caja'] : ''; ?>" required>
+                                                   value="<?php echo $producto_editar ? $producto_editar['unidades_por_caja'] : ''; ?>" required 
+                                                   oninput="calcularCostoUnitario()">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="costoUnitario">Costo Unitario (S/)</label>
+                                            <input type="text" class="form-control bg-light" id="costoUnitario" readonly 
+                                                   placeholder="Se calcula automáticamente">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label" for="stockProducto">Stock *</label>
@@ -359,7 +376,8 @@
                                                     pg_result_seek($result2, 0);
                                                     while($row2 = pg_fetch_assoc($result2)){
                                                         $selected = ($producto_editar && $producto_editar['cod_proveedor'] == $row2['cod_proveedor']) ? 'selected' : '';
-                                                        echo "<option value='{$row2['cod_proveedor']}' $selected>{$row2['nombre']}</option>";
+                                                        // CORRECCIÓN: Mostrar razon_social en lugar de nombre
+                                                        echo "<option value='{$row2['cod_proveedor']}' $selected>{$row2['razon_social']}</option>";
                                                     }
                                                 }
                                                 ?>
@@ -429,7 +447,8 @@
                                     if($result2) {
                                         pg_result_seek($result2, 0);
                                         while($row2 = pg_fetch_assoc($result2)){
-                                            echo "<option value='{$row2['cod_proveedor']}'>{$row2['nombre']}</option>";
+                                            // CORRECCIÓN: Mostrar razon_social en lugar de nombre
+                                            echo "<option value='{$row2['cod_proveedor']}'>{$row2['razon_social']}</option>";
                                         }
                                     }
                                     ?>
@@ -510,6 +529,29 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // Función para calcular costo unitario automáticamente
+        function calcularCostoUnitario() {
+            const precioCosto = parseFloat(document.getElementById('precioCosto').value) || 0;
+            const unidadesCaja = parseInt(document.getElementById('unidadesCaja').value) || 1;
+            
+            if (unidadesCaja > 0 && precioCosto > 0) {
+                const costoUnitario = precioCosto / unidadesCaja;
+                document.getElementById('costoUnitario').value = 'S/ ' + costoUnitario.toFixed(2);
+            } else {
+                document.getElementById('costoUnitario').value = '';
+            }
+        }
+
+        // Calcular automáticamente al cargar la página si hay datos de edición
+        document.addEventListener('DOMContentLoaded', function() {
+            calcularCostoUnitario();
+            
+            <?php if($producto_editar): ?>
+            const modal = new bootstrap.Modal(document.getElementById('modalProducto'));
+            modal.show();
+            <?php endif; ?>
+        });
+
         // Funciones JavaScript
         function cerrarTurno() {
             if(confirm('¿Está seguro de que desea cerrar el turno?')) {
@@ -539,15 +581,8 @@
         // Función para limpiar formulario al crear nuevo producto
         function limpiarFormulario() {
             document.querySelector('input[name="codigoProducto"]').removeAttribute('readonly');
+            document.getElementById('costoUnitario').value = '';
         }
-
-        // Auto-abrir modal si estamos editando
-        <?php if($producto_editar): ?>
-        document.addEventListener('DOMContentLoaded', function() {
-            const modal = new bootstrap.Modal(document.getElementById('modalProducto'));
-            modal.show();
-        });
-        <?php endif; ?>
 
         // Buscar productos en tiempo real
         document.getElementById('buscarProducto').addEventListener('input', aplicarFiltros);

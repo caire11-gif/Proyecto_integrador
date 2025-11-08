@@ -1,53 +1,88 @@
-/*Ventas recientes*/
-.ventas-recientes h3 {
-    color: #2c3e50;
-    margin-bottom: 20px;
-    font-size: 1.4rem;
-}
-
 .ventas-lista {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    flex-direction: column; /* Cada venta debajo de otra */
+    gap: 12px;
+    padding: 10px;
+    max-height: 500px;
+    overflow-y: auto;
 }
 
 .venta-item {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 3px 15px rgba(0,0,0,0.08);
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.3s ease;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 12px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: 0.2s ease-in-out;
+    margin-bottom: 15px;
 }
 
 .venta-item:hover {
-    transform: translateX(5px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .venta-info {
     display: flex;
-    gap: 15px;
+    flex-wrap: wrap;
     align-items: center;
+    gap: 10px;
 }
 
 .venta-id {
-    background: #3498db;
+    background: #007bff;
     color: white;
-    padding: 5px 12px;
-    border-radius: 15px;
-    font-weight: 600;
-    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: bold;
+}
+
+.venta-fecha {
+    color: #6c757d;
+    font-size: 0.9rem;
 }
 
 .venta-productos {
-    color: #7f8c8d;
-    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.metodo-efectivo {
+    color: green;
+    background: #e8f5e9;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+}
+
+.metodo-tarjeta {
+    color: #0066cc;
+    background: #e3f2fd;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+}
+
+.metodo-transferencia {
+    color: #9c27b0;
+    background: #f3e5f5;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+}
+
+.venta-unidades {
+    background: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 0.85rem;
 }
 
 .venta-total {
     font-weight: 700;
-    color: #27ae60;
-    font-size: 1.1rem;
+    color: #1ab11a;
+    font-size: 1.2rem;
+    min-width: 80px;
+    text-align: right;
 }

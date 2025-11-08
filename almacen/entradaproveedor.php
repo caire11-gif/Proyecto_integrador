@@ -10,24 +10,9 @@
     <link rel="stylesheet" href="css/almacen-boton/boton.css">
 </head>
 <body>
+    <?php include('../login/ingresarlogin.php') ?>
     <?php
-        $conexion = pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
-        if(!$conexion){
-            echo "Un error de conexión ocurrió.";
-            exit;
-        }
-
-        session_start();
-        $usuarioencargado=$_SESSION['nombreusuarioencargado'];
-        $apellidoencargado=$_SESSION['apellidousuarioencargado'];
-
-        $inicialNombre = substr($usuarioencargado, 0, 1);
-        $inicialApellido=substr($apellidoencargado,0,1);
-
-        if (!isset($_SESSION['nombreusuarioencargado'])) {
-            header("Location: ../login.php");
-            exit;
-        }
+    $cod_usuario='USU001';
 
         // Inicializar variables con valores por defecto
         $precios_productos = array();
@@ -36,11 +21,11 @@
         // Obtener parámetro de filtro si existe
         $filtro = $_GET['filtro'] ?? 'todos';
         $busqueda = $_GET['busqueda'] ?? '';
-        $tab_activa = $_GET['tab'] ?? 'nuevaEntrada'; // Nueva variable para controlar la pestaña activa
+        $tab_activa = $_GET['tab'] ?? 'nuevaEntrada';
 
         try {
-            // Obtener datos para los select (con manejo de errores individual)
-            $result1 = pg_query($conexion, "SELECT cod_proveedor, nombre FROM proveedor");
+            // CORRECCIÓN: Obtener datos para los select - cambiar 'nombre' por 'razon_social'
+            $result1 = pg_query($conexion, "SELECT cod_proveedor, razon_social FROM proveedor");
             if(!$result1){
                 error_log("Error al cargar proveedores: " . pg_last_error($conexion));
             }
@@ -50,25 +35,27 @@
                 error_log("Error al cargar tipos de documento: " . pg_last_error($conexion));
             }
 
-            // Obtener productos CON PRECIO DE COSTO (precio por caja)
-            $result3 = pg_query($conexion, "SELECT cod_producto, nombre, precio_costo, unidades_por_caja FROM producto");
+            // CORRECCIÓN: Obtener productos CON PRECIO DE CAJA (no precio_costo)
+            $result3 = pg_query($conexion, "SELECT cod_producto, nombre, precio_caja, unidades_por_caja FROM producto");
             if(!$result3){
                 error_log("Error al cargar productos: " . pg_last_error($conexion));
             } else {
                 // Crear array con precios de productos (precio por caja)
                 pg_result_seek($result3, 0);
                 while($row = pg_fetch_assoc($result3)){
-                    $precios_productos[$row['cod_producto']] = $row['precio_costo'];
+                    $precios_productos[$row['cod_producto']] = $row['precio_caja'];
                     $unidades_por_caja[$row['cod_producto']] = $row['unidades_por_caja'];
                 }
             }
 
-            // OBTENER CÓDIGOS DE TABLAS DE REFERENCIA CON MANEJO DE ERRORES
+            // OBTENER CÓDIGOS DE TABLAS DE REFERENCIA
             // Métodos de pago
             $result_mp = pg_query($conexion, "SELECT cod_metodopago FROM metodopago LIMIT 1");
             if($result_mp && pg_num_rows($result_mp) > 0) {
                 $row = pg_fetch_assoc($result_mp);
                 $cod_metodopago = $row['cod_metodopago'];
+            } else {
+                $cod_metodopago = 'MP001'; // Valor por defecto más común
             }
 
             // Tipos de reporte
@@ -76,34 +63,37 @@
             if($result_tr && pg_num_rows($result_tr) > 0) {
                 $row = pg_fetch_assoc($result_tr);
                 $cod_tiporeporte = $row['cod_tiporeporte'];
+            } else {
+                $cod_tiporeporte = 'REP001'; // Valor por defecto más común
             }
 
-            // Tipos de movimiento
+            // Tipos de movimiento - CORRECCIÓN: Buscar uno que exista realmente
             $result_tm = pg_query($conexion, "SELECT cod_tipomovimiento FROM tipomovimiento LIMIT 1");
             if($result_tm && pg_num_rows($result_tm) > 0) {
                 $row = pg_fetch_assoc($result_tm);
                 $cod_tipomovimiento = $row['cod_tipomovimiento'];
+            } else {
+                // Si no hay registros, intentar insertar uno básico
+                $cod_tipomovimiento = 'MOV001';
+                $insert_tm = pg_query($conexion, "INSERT INTO tipomovimiento (cod_tipomovimiento, nombre) VALUES ('MOV001', 'Entrada')");
             }
 
-            // Tipos de acción
+            // CORRECCIÓN: Tipos de acción - Buscar uno que exista realmente
             $result_ta = pg_query($conexion, "SELECT cod_tipoaccion FROM tipoaccion LIMIT 1");
             if($result_ta && pg_num_rows($result_ta) > 0) {
                 $row = pg_fetch_assoc($result_ta);
                 $cod_tipoaccion = $row['cod_tipoaccion'];
+            } else {
+                // Si no hay registros, intentar insertar uno básico
+                $cod_tipoaccion = 'ACC001';
+                $insert_ta = pg_query($conexion, "INSERT INTO tipoaccion (cod_tipoaccion, nombre) VALUES ('ACC001', 'Registro')");
             }
 
-            // Usuario
-            $result_u = pg_query($conexion, "SELECT cod_usuario FROM usuario LIMIT 1");
-            if($result_u && pg_num_rows($result_u) > 0) {
-                $row = pg_fetch_assoc($result_u);
-                $cod_usuario = $row['cod_usuario'];
-            }
-
-            // CONSULTA para historial - COMPRAS AGRUPADAS con filtros
+            // CORRECCIÓN: CONSULTA para historial - COMPRAS AGRUPADAS con filtros - cambiar pr.nombre por pr.razon_social
             $query_historial = "SELECT 
                                 c.cod_compra,
                                 c.fecha_compra AS fecha,
-                                pr.nombre AS proveedor_nombre,
+                                pr.razon_social AS proveedor_nombre,
                                 u.usuario AS usuario_registro,
                                 COUNT(dc.cod_detallecompra) AS total_productos,
                                 SUM(dc.total) AS total_compra,
@@ -128,12 +118,12 @@
             if (!empty($busqueda)) {
                 $busqueda_like = pg_escape_string($busqueda);
                 $query_historial .= " AND (c.cod_compra ILIKE '%$busqueda_like%' 
-                                         OR pr.nombre ILIKE '%$busqueda_like%'
+                                         OR pr.razon_social ILIKE '%$busqueda_like%'
                                          OR u.usuario ILIKE '%$busqueda_like%')";
             }
 
-            $query_historial .= " GROUP BY c.cod_compra, c.fecha_compra, pr.nombre, u.usuario, mp.nombre
-                                 ORDER BY c.fecha_compra DESC";
+            $query_historial .= " GROUP BY c.cod_compra, c.fecha_compra, pr.razon_social, u.usuario, mp.nombre
+                                 ORDER BY c.fecha_compra DESC, c.cod_compra DESC";
 
             $result4 = pg_query($conexion, $query_historial);
             
@@ -147,7 +137,6 @@
 
         // Función para generar códigos únicos de exactamente 10 caracteres
         function generarCodigo($prefijo) {
-            // Prefijo máximo 3 caracteres + número de 7 dígitos = 10 caracteres
             $numero = str_pad(mt_rand(1, 9999999), 7, '0', STR_PAD_LEFT);
             return substr($prefijo, 0, 3) . $numero;
         }
@@ -164,7 +153,7 @@
                 $tipo_comprobante = $_POST['tipo_comprobante'] ?? '';
                 $productos = $_POST['productos'] ?? [];
                 $cantidades = $_POST['cantidades'] ?? [];
-                $precios_caja = $_POST['precios_caja'] ?? []; // Cambiado a precios_caja
+                $precios_caja = $_POST['precios_caja'] ?? [];
                 
                 // Validar datos requeridos
                 if(empty($proveedor) || empty($fecha_entrada)) {
@@ -190,16 +179,15 @@
                 foreach($productos as $index => $cod_producto) {
                     if(!empty($cod_producto)) {
                         $cantidad_cajas = intval($cantidades[$index]);
-                        $precio_por_caja = floatval($precios_caja[$index]); // Precio por caja
+                        $precio_por_caja = floatval($precios_caja[$index]);
                         
-                        // CALCULAR PRECIO UNITARIO según la fórmula: (cantidad_cajas * precio_por_caja) / (cantidad_cajas * unidades_por_caja)
-                        // Simplificado: precio_por_caja / unidades_por_caja
+                        // CALCULAR PRECIO UNITARIO Y TOTAL CORREGIDOS
                         $unidades_por_caja_producto = $unidades_por_caja[$cod_producto];
                         $precio_unitario = $precio_por_caja / $unidades_por_caja_producto;
                         
-                        // Calcular total basado en unidades
+                        // CALCULO CORREGIDO: Total = cantidad_cajas * precio_por_caja
+                        $total = $cantidad_cajas * $precio_por_caja;
                         $cantidad_unidades = $cantidad_cajas * $unidades_por_caja_producto;
-                        $total = $cantidad_unidades * $precio_unitario;
                         
                         // Validar datos del producto
                         if($cantidad_cajas <= 0) {
@@ -216,9 +204,9 @@
                         $cod_historial = generarCodigo('HIS' . $index);
                         
                         // 4. Insertar en detallecompra (con el MISMO cod_compra para todos)
-                        // GUARDAR el precio_unitario calculado en detallecompra
-                        $query_detalle = "INSERT INTO detallecompra (cod_detallecompra, cod_compra, cod_producto, cantidad_cajas, precio_unitario, total) 
-                                         VALUES ('$cod_detallecompra', '$cod_compra', '$cod_producto', $cantidad_cajas, $precio_unitario, $total)";
+                        // CORRECCIÓN: La tabla detallecompra tiene cantidad_unidades, no precio_unitario
+                        $query_detalle = "INSERT INTO detallecompra (cod_detallecompra, cod_compra, cod_producto, cantidad_cajas, cantidad_unidades, total) 
+                                         VALUES ('$cod_detallecompra', '$cod_compra', '$cod_producto', $cantidad_cajas, $cantidad_unidades, $total)";
                         
                         if(!pg_query($conexion, $query_detalle)) {
                             throw new Exception("Error al insertar detalle de compra: " . pg_last_error($conexion));
@@ -231,8 +219,6 @@
                         if(!pg_query($conexion, $query_update_stock)) {
                             throw new Exception("Error al actualizar stock: " . pg_last_error($conexion));
                         }
-                        
-                        $cantidad_final=$cantidad_unidades;
 
                         // 6. Insertar en registroinventario
                         $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total) 
@@ -251,13 +237,16 @@
                             throw new Exception("Error al insertar movimiento: " . pg_last_error($conexion));
                         }
                         
-                        // 8. Insertar en historialproductos
-                        $observacion_historial = "Entrada de $cantidad_cajas cajas ($unidades_agregadas unidades) - Compra: $cod_compra - Total: S/ $total";
-                        $query_historial = "INSERT INTO historialproductos (cod_historialproductos, cod_usuario, cod_producto, cod_tipoaccion, observacion) 
-                                          VALUES ('$cod_historial', '$cod_usuario', '$cod_producto', '$cod_tipoaccion', '$observacion_historial')";
-                        
-                        if(!pg_query($conexion, $query_historial)) {
-                            throw new Exception("Error al insertar historial: " . pg_last_error($conexion));
+                        // 8. Insertar en historialproductos SOLO SI EXISTE EL TIPO DE ACCIÓN
+                        if (!empty($cod_tipoaccion)) {
+                            $observacion_historial = "Entrada de $cantidad_cajas cajas ($unidades_agregadas unidades) - Compra: $cod_compra - Total: S/ $total";
+                            $query_historial = "INSERT INTO historialproductos (cod_historialproductos, cod_usuario, cod_producto, cod_tipoaccion, observacion) 
+                                              VALUES ('$cod_historial', '$cod_usuario', '$cod_producto', '$cod_tipoaccion', '$observacion_historial')";
+                            
+                            if(!pg_query($conexion, $query_historial)) {
+                                // Si falla el historial, solo loguear el error pero no detener el proceso
+                                error_log("Error al insertar historial (continuando sin historial): " . pg_last_error($conexion));
+                            }
                         }
                     }
                 }
@@ -267,7 +256,7 @@
                 
                 echo "<script>
                     alert('Entrada registrada correctamente. Stock actualizado. Código de compra: $cod_compra');
-                    window.location.href = 'entradaproveedor.php';
+                    window.location.href = 'entradaproveedor.php?tab=nuevaEntrada';
                 </script>";
                 
             } catch (Exception $e) {
@@ -291,9 +280,9 @@
                 </div>
 
                 <div class="nav flex-column mt-3">
-                    <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
-                    <a href="gestionproductos.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
-                    <a href="almacenproveedores.php" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
+                    <a href="dashboard.html" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="gestionproductos.html" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
+                    <a href="almacenproveedores.html" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
                     <a href="entradaproveedor.php" class="nav-link active"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
                     <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
                     <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
@@ -315,7 +304,7 @@
                                 <span class="arrow" id="arrow">▲</span>
                             </button>
                             <ul class="dropdown-list" id="dropdownList">
-                                <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                                <a href="../login.html" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                             </ul>
                         </div>
                     </div> 
@@ -368,7 +357,7 @@
                                                 <?php
                                                 if($result1) {
                                                     while($row1 = pg_fetch_assoc($result1)){
-                                                        echo "<option value='{$row1['cod_proveedor']}'>{$row1['nombre']}</option>";
+                                                        echo "<option value='{$row1['cod_proveedor']}'>{$row1['razon_social']}</option>";
                                                     }
                                                 }
                                                 ?>
@@ -424,7 +413,7 @@
                                                                 if($result3) {
                                                                     pg_result_seek($result3, 0);
                                                                     while($row3 = pg_fetch_assoc($result3)){
-                                                                        echo "<option value='{$row3['cod_producto']}' data-precio='{$row3['precio_costo']}' data-unidades='{$row3['unidades_por_caja']}'>{$row3['nombre']}</option>";
+                                                                        echo "<option value='{$row3['cod_producto']}' data-precio='{$row3['precio_caja']}' data-unidades='{$row3['unidades_por_caja']}'>{$row3['nombre']}</option>";
                                                                     }
                                                                 }
                                                                 ?>
@@ -601,6 +590,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @click="generarPdf()">Descargar</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
@@ -608,6 +598,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/usuario.js"></script>
     <script>
         // Array con precios de productos (se llena con PHP)
         const preciosProductos = <?php echo json_encode($precios_productos); ?>;
@@ -640,7 +631,7 @@
             const productoId = productoSelect.value;
             const totalUnidadesCell = row.querySelector('.total-unidades');
             
-            // Calcular total basado en PRECIO POR CAJA
+            // Calcular total basado en PRECIO POR CAJA (CORRECTO)
             const unidadesPorCajaProducto = unidadesPorCaja[productoId] || 1;
             const cantidadUnidades = cantidadCajas * unidadesPorCajaProducto;
             const total = cantidadCajas * precioPorCaja; // Total = cantidad_cajas * precio_por_caja
@@ -674,7 +665,7 @@
                         if($result3) {
                             pg_result_seek($result3, 0);
                             while($row3 = pg_fetch_assoc($result3)){
-                                echo "<option value='{$row3['cod_producto']}' data-precio='{$row3['precio_costo']}' data-unidades='{$row3['unidades_por_caja']}'>{$row3['nombre']}</option>";
+                                echo "<option value='{$row3['cod_producto']}' data-precio='{$row3['precio_caja']}' data-unidades='{$row3['unidades_por_caja']}'>{$row3['nombre']}</option>";
                             }
                         }
                         ?>
@@ -731,8 +722,7 @@
         function aplicarFiltro(filtro) {
             const url = new URL(window.location.href);
             url.searchParams.set('filtro', filtro);
-            url.searchParams.set('tab', 'historialEntradas'); // Siempre mantener en historial al filtrar
-            // Mantener la búsqueda si existe
+            url.searchParams.set('tab', 'historialEntradas');
             const busqueda = document.getElementById('buscarHistorial').value;
             if (busqueda) {
                 url.searchParams.set('busqueda', busqueda);
@@ -743,7 +733,6 @@
         function cambiarTab(tab) {
             const url = new URL(window.location.href);
             url.searchParams.set('tab', tab);
-            // Limpiar filtros y búsqueda si vamos a nueva entrada
             if (tab === 'nuevaEntrada') {
                 url.searchParams.delete('filtro');
                 url.searchParams.delete('busqueda');
@@ -751,15 +740,7 @@
             window.location.href = url.toString();
         }
 
-        function cerrarTurno() {
-            if(confirm('¿Está seguro de que desea cerrar el turno?')) {
-                alert('Turno cerrado correctamente');
-            }
-        }
-
-        // Función para ver detalles de compra
         function verDetallesCompra(codCompra) {
-            // Hacer petición AJAX para obtener los detalles
             fetch('obtener_detalles_compra.php?cod_compra=' + codCompra)
                 .then(response => response.text())
                 .then(data => {
@@ -786,7 +767,7 @@
                 cargarPrecioProducto(primeraFila.querySelector('.product-select'));
             }
 
-            // Configurar búsqueda en tiempo real (opcional)
+            // Configurar búsqueda en tiempo real
             const buscarHistorial = document.getElementById('buscarHistorial');
             if (buscarHistorial) {
                 buscarHistorial.addEventListener('keypress', function(e) {
@@ -796,38 +777,46 @@
                 });
             }
 
-            // Activar la pestaña correcta al cargar la página
-            const tabActiva = '<?php echo $tab_activa; ?>';
-            if (tabActiva === 'historialEntradas') {
-                // Ya está configurado en PHP, pero por si acaso
-                const tabElement = document.querySelector('a[href="#historialEntradas"]');
-                if (tabElement) {
-                    new bootstrap.Tab(tabElement).show();
+            // Validación de fecha
+            document.getElementById("formEntrada").addEventListener("submit", function(event){
+                const fechaentrada = document.getElementById("fechaEntrada").value.trim();
+                const hoy = new Date();
+                const fecha = new Date(fechaentrada);
+
+                hoy.setHours(0,0,0,0);
+                fecha.setHours(0,0,0,0);
+
+                if(fecha > hoy){
+                    alert("La fecha no puede ser superior a la de hoy");
+                    event.preventDefault();
+                    return;
                 }
-            }
+            });
         });
 
-        document.getElementById("formEntrada").addEventListener("submit", function(event){
-            const fechaentrada=document.getElementById("fechaEntrada").value.trim();
+    const dropdownBtn = document.getElementById("dropdownBtn");
+    const dropdownList = document.getElementById("dropdownList");
+    const arrow = document.getElementById("arrow");
 
-            const hoy=new Date();
-            const fecha=new Date(fechaentrada);
-
-            hoy.setHours(0,0,0,0);
-            fecha.setHours(0,0,0,0);
-
-            if(fecha>hoy){
-                Swal.fire({
-                    icon: "warning",
-                    title: "Oops...",
-                    text: "La fecha no puede ser superior a la de hoy",
-                    width: "350px",
-                });
-                event.preventDefault();
-                return;
-            }
-        });
+    dropdownBtn.addEventListener("click", () => {
+        const isVisible = dropdownList.style.display === "block";
+        dropdownList.style.display = isVisible ? "none" : "block";
+        arrow.style.transform = isVisible ? "rotate(0deg)" : "rotate(180deg)";
+    });
+                            
+    // Cierra el menú si haces clic fuera
+    document.addEventListener("click", (e) => {
+        if (!dropdownBtn.contains(e.target) && !dropdownList.contains(e.target)) {
+            dropdownList.style.display = "none";
+            arrow.style.transform = "rotate(0deg)";
+        }
+    });
+    </script>
+    <script setup>
+        import {convertHtmlPdf} from  'js/descarga.js'
+        const generarPdf=()=>{
+            convertHtmlPdf('detallesCompraContent')
+        }
     </script>
 </body>
 </html>
-

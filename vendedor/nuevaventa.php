@@ -589,11 +589,11 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                 </div>
 
                 <div class="nav flex-column mt-3">
-                    <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="dashboard.html" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
                     <a href="nuevaventa.php" class="nav-link active"><ul><i class="fas fa-cash-register"></i>Nueva Venta</ul></a>
                     <a href="registrodevolucion.php" class="nav-link"><ul><i class="fas fa-undo-alt"></i>Registrar Devolución</ul></a>
                     <a href="boletafactura.php" class="nav-link"><ul><i class="fas fa-receipt"></i>Boletas/Facturas</ul></a>
-                    <a href="consultastock.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Consulta-stock</ul></a>
+                    <a href="consultastock.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Consulta stock</ul></a>
                 </div>
             </div>
         </main>

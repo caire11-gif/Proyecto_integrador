@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mad Market - Sistema de Encargado</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/almacen-dashboard/datos.css">
+    <link rel="stylesheet" href="css/almacen-interfaz/interfaz.css">
+    <link rel="stylesheet" href="css/almacen-boton/boton.css">
+</head>
+<body>
+    <div class="grid">
+        <main class="principal">
+            <button class="boton-menu" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="barra-lateral" id="barra-lateral">
+                <div class="logo">
+                    <h4><i class="fas fa-store"></i> MAD MARKET</h4>
+                    <small id="userRole">Encargado</small>
+                </div>
+
+                <div class="nav flex-column mt-3">
+                    <a href="dashboard.html" class="nav-link active"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="gestionproductos.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
+                    <a href="almacenproveedores.html" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
+                    <a href="entradaproveedor.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
+                    <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
+                    <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
+                </div>
+            </div>
+        </main>
+
+        <div class="secundario">
+            <div class="header">
+                <div class="usuario-info">
+                    <div class="usuario-avatar" id="usuarioAvatar"></div>
+                    <div>
+                        <div class="fw-bold fs-5" id="userName"></div>
+                        <small class="text-muted" id="userPosition">Encargado</small>
+                    </div>
+                    <div class="dropdown-container">
+                        <div class="dropdown">
+                            <button class="dropdown-btn" id="dropdownBtn">
+                                <span class="arrow" id="arrow">▲</span>
+                            </button>
+                            <ul class="dropdown-list" id="dropdownList">
+                                <a href="../login.html" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <br>
+
+            <div class="container-fluid">
+                <div class="row mb-4">
+                    <!-- Tarjeta 1: Productos en Almacén -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card stats-card primary h-100">
+                            <i class="fas fa-boxes text-primary"></i>
+                            <div class="number" id="cantProd"></div>
+                            <div class="label">Productos en Almacén</div>
+                            <div class="d-grid text-center">
+                                <div class="text-muted" id="cantCate"></div>
+                                <div class="ml-1">categorías</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta 2: Entradas Este Mes -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card stats-card success h-100">
+                            <i class="fas fa-truck-loading text-success"></i>
+                            <div class="number" id="cantMovi"></div>
+                            <div class="label">Compras Este Mes</div>
+                            <small class="text-muted">Entradas desde proveedores</small>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta 3: Alertas Activas -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card stats-card warning h-100">
+                            <i class="fas fa-exclamation-triangle text-warning"></i>
+                            <div class="number">0</div>
+                            <div class="label">Alertas Activas</div>
+                            <small class="text-muted">0 requieren atención urgente</small>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta 4: Productos con Stock Bajo -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card stats-card danger h-100">
+                            <i class="fas fa-exclamation-circle text-danger"></i>
+                            <div class="number" id="cantProdBajo"></div>
+                            <div class="label">Stock Bajo</div>
+                            <small class="text-muted">Stock menor o igual a 5 unidades</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones Rápidas (se mantiene igual) -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Acciones Rápidas</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="acciones-grid">
+                                    <a href="entradaproveedor.php">
+                                        <div class="accion-card">
+                                            <div class="accion-icono"><i class="fas fa-truck-loading fa-2x mb-2 d-block"></i></div>
+                                            <div class="accion-titulo"><span class="fw-bold">Nueva Entrada</span></div>
+                                            <div class="accion-descripcion"><small class="d-block mt-1">Registrar compra</small></div>
+                                        </div>
+                                    </a>
+
+                                    <a href="gestionproductos.php">
+                                        <div class="accion-card">
+                                            <div class="accion-icono"><i class="fas fa-plus-circle fa-2x mb-2 d-block"></i></div>
+                                            <div class="accion-titulo"><span class="fw-bold">Nuevo producto</span></div>
+                                            <div class="accion-descripcion"><small class="d-block mt-1">Agregar productos al sistema</small></div>
+                                        </div>
+                                    </a>
+
+                                    <a href="almacenproveedores.html">
+                                        <div class="accion-card">
+                                            <div class="accion-icono"><i class="fas fa-truck fa-2x mb-2 d-block"></i></div>
+                                            <div class="accion-titulo"><span class="fw-bold">Ver Proveedores</span></div>
+                                            <div class="accion-descripcion"><small class="d-block mt-1">Gestionar proveedores</small></div>
+                                        </div>
+                                    </a>
+
+                                    <a href="notificaciones.php">
+                                        <div class="accion-card">
+                                            <div class="accion-icono"><i class="fas fa-bell fa-2x mb-2 d-block"></i></div>
+                                            <div class="accion-titulo"><span class="fw-bold">Ver notificaciones</span></div>
+                                            <div class="accion-descripcion"><small class="d-block mt-1">Revisar notificaciones</small></div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Panel de Alertas de Stock Urgentes -->
+                <div class="col-xl-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-warning text-white">
+                            <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Alertas de Stock Urgentes</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush" id="alertas">
+                                <!-- Las alertas se cargarán via JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel de Movimientos Recientes -->
+                <div class="col-xl-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Movimientos Recientes</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="lista-personal list-group list-group-flush">
+                                <div class="timeline" id="moviRecien">
+                                <!-- Los movimientos se cargarán via JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/usuario.js"></script>
+    <script src="js/dropdown.js"></script>
+    <script src="js/dashboard/seleccard.js"></script>
+    <script src="js/dashboard/alertas.js"></script>
+    <script src="js/dashboard/movirecien.js"></script>
+</body>
+</html>

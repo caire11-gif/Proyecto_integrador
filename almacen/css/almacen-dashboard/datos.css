@@ -83,7 +83,7 @@ a{
 
 .acciones-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(25px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
 }
 
@@ -127,10 +127,7 @@ a{
 }
 
 /*Movimientos recientes*/
-.timeline {
-    position: relative;
-    padding-left: 30px;
-}
+
 
 .timeline-item {
     position: relative;
@@ -139,4 +136,27 @@ a{
     background: #f8f9fa;
     border-radius: 10px;
     border-left: 4px solid #27ae60;
+}
+
+.lista-personal {
+    max-height: 300px;  /* 👈 Ajusta esta altura según necesites */
+    overflow-y: auto;   /* 👈 Activa el scroll vertical */
+    padding-right: 5px;
+}
+
+.lista-personal::-webkit-scrollbar {
+    width: 6px;
+}
+
+.lista-personal::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.timeline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding: 8px 0;
 }
