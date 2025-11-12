@@ -8,11 +8,51 @@ if(!$conexion){
 }
 
 session_start();
-$usuariovendedor=$_SESSION['nombreusuariovendedor'];
-$apellidovendedor=$_SESSION['apellidousuariovendedor'];
+$usuariovendedor = $_SESSION['nombreusuariovendedor'] ?? '';
+$apellidovendedor = $_SESSION['apellidousuariovendedor'] ?? '';
+$cod_usuario_session = $_SESSION['cod_usuario'] ?? 'USER001';
 
 $inicialNombre = substr($usuariovendedor, 0, 1);
-$inicialApellido=substr($apellidovendedor,0,1);
+$inicialApellido = substr($apellidovendedor, 0, 1);
+
+// FUNCIONES PARA GENERAR CÓDIGOS ÚNICOS EN ORDEN - CORREGIDO
+function obtenerSiguienteCodigo($conexion, $tabla, $prefijo) {
+    // Mapear nombres de columnas y formatos según tu estructura de base de datos
+    $configuraciones = [
+        'venta' => ['columna' => 'cod_venta', 'formato' => 'V'],
+        'detalleventa' => ['columna' => 'cod_detalleventa', 'formato' => 'DV'],
+        'registroinventario' => ['columna' => 'cod_inventario', 'formato' => 'INV'],
+        'movimiento' => ['columna' => 'cod_movimiento', 'formato' => 'MOV'],
+        'historialproductos' => ['columna' => 'cod_historialproductos', 'formato' => 'HIS'],
+        'reporte' => ['columna' => 'cod_reporte', 'formato' => 'REP']
+    ];
+    
+    $config = $configuraciones[$tabla] ?? ['columna' => "cod_$tabla", 'formato' => $prefijo];
+    $columna = $config['columna'];
+    $formato_prefijo = $config['formato'];
+    
+    $query = "SELECT $columna FROM $tabla ORDER BY $columna DESC LIMIT 1";
+    $result = pg_query($conexion, $query);
+    
+    if($result && pg_num_rows($result) > 0) {
+        $ultimo_cod = pg_fetch_assoc($result)[$columna];
+        
+        // Extraer el número del último código (ej: "INV1" -> 1, "INV15" -> 15)
+        if (preg_match('/\d+$/', $ultimo_cod, $matches)) {
+            $numero = intval($matches[0]);
+            $nuevo_numero = $numero + 1;
+        } else {
+            // Si no encuentra número, empezar desde 1
+            $nuevo_numero = 1;
+        }
+    } else {
+        // Si no hay registros, empezar desde 1
+        $nuevo_numero = 1;
+    }
+    
+    // Formatear según el formato específico (INV1, INV2, etc.)
+    return $formato_prefijo . $nuevo_numero;
+}
 
 // VERIFICAR Y CREAR DATOS MAESTROS SI NO EXISTEN
 function verificarDatosMaestros($conexion) {
@@ -36,6 +76,23 @@ function verificarDatosMaestros($conexion) {
         pg_query($conexion, "INSERT INTO tiporeporte (cod_tiporeporte, nombre) VALUES 
                             ('TR001', 'Reporte Ventas'), ('TR002', 'Reporte Inventario')");
     }
+    
+    // Verificar métodos de pago
+    $checkMetodos = pg_query($conexion, "SELECT COUNT(*) as count FROM metodopago WHERE cod_metodopago = 'MP001'");
+    if($checkMetodos && pg_fetch_result($checkMetodos, 0) == 0) {
+        pg_query($conexion, "INSERT INTO metodopago (cod_metodopago, nombre) VALUES 
+                            ('MP001', 'Efectivo'), ('MP002', 'Tarjeta Débito'), 
+                            ('MP003', 'Tarjeta Crédito'), ('MP004', 'Transferencia'),
+                            ('MP005', 'Yape'), ('MP006', 'Plin')");
+    }
+    
+    // Verificar tipos de documento
+    $checkDocumento = pg_query($conexion, "SELECT COUNT(*) as count FROM tipodocumento WHERE cod_tipodocumento = 'TD001'");
+    if($checkDocumento && pg_fetch_result($checkDocumento, 0) == 0) {
+        pg_query($conexion, "INSERT INTO tipodocumento (cod_tipodocumento, nombre, serie, numero) VALUES 
+                            ('TD001', 'Boleta', 'B001', 1), 
+                            ('TD002', 'Factura', 'F001', 1)");
+    }
 }
 
 verificarDatosMaestros($conexion);
@@ -43,61 +100,77 @@ verificarDatosMaestros($conexion);
 // PROCESAR VENTA CUANDO SE ENVÍA EL FORMULARIO
 if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
     
-    // GENERAR CÓDIGOS ÚNICOS
-    $timestamp = substr(time(), -6);
-    $cod_venta = 'V' . $timestamp;
+    // GENERAR CÓDIGOS ÚNICOS EN ORDEN - SOLO UNA VEZ POR TABLA
+    $cod_venta = obtenerSiguienteCodigo($conexion, 'venta', 'V');
+    $cod_reporte = obtenerSiguienteCodigo($conexion, 'reporte', 'REP');
     
     // DATOS DE LA VENTA
-    $cod_usuario = 'user001'; // Usuario por defecto según tu BD
+    $cod_usuario = $cod_usuario_session;
     $cod_metodopago = $_POST['cod_metodopago'];
     $total = $_POST['total'];
     $tipo_documento = $_POST['tipo_documento'];
     $productos = json_decode($_POST['productos_json'], true);
     
-    // VALIDAR DATOS DEL CLIENTE PARA FACTURA
+    // DATOS DEL CLIENTE
+    $dni_cliente = $_POST['dni_cliente'] ?? '';
+    $nombre_cliente = $_POST['nombre_cliente'] ?? '';
+    $email_cliente = $_POST['email_cliente'] ?? '';
+    $ruc_cliente = $_POST['ruc_cliente'] ?? '';
+    $razon_social_cliente = $_POST['razon_social_cliente'] ?? '';
+    $direccion_cliente = $_POST['direccion_cliente'] ?? '';
+    
+    // VALIDAR DATOS DEL CLIENTE SEGÚN TIPO DE DOCUMENTO
     $error_venta = '';
+    
     if($tipo_documento === 'factura') {
-        $ruc = $_POST['ruc'] ?? '';
-        $razon_social = $_POST['razon_social'] ?? '';
-        $direccion = $_POST['direccion'] ?? '';
-        
-        if(empty($ruc) || strlen($ruc) !== 11) {
+        if(empty($ruc_cliente) || strlen($ruc_cliente) !== 11) {
             $error_venta = "Para factura debe ingresar un RUC válido de 11 dígitos";
-        } elseif(empty($razon_social)) {
+        } elseif(empty($razon_social_cliente)) {
             $error_venta = "Para factura debe ingresar la Razón Social del cliente";
+        } elseif(empty($direccion_cliente)) {
+            $error_venta = "Para factura debe ingresar la dirección del cliente";
+        }
+    } else {
+        // Para boleta, validar DNI si se proporciona
+        if(!empty($dni_cliente) && strlen($dni_cliente) !== 8) {
+            $error_venta = "El DNI debe tener 8 dígitos";
         }
     }
     
     if(empty($error_venta)) {
-        // Generar datos del comprobante
+        // Configurar datos del comprobante
         if($tipo_documento === 'factura') {
+            $cod_tipodocumento = 'TD002'; // Factura
             $nombre_documento = 'Factura';
-            $serie = 'F001';
-            $numero = rand(1000, 9999);
-            $cod_comprobante = 'F' . $timestamp;
         } else {
+            $cod_tipodocumento = 'TD001'; // Boleta
             $nombre_documento = 'Boleta';
-            $serie = 'B001';
-            $numero = rand(1000, 9999);
-            $cod_comprobante = 'B' . $timestamp;
         }
+        
+        // Obtener serie y número actual del documento
+        $queryDocumento = "SELECT serie, numero FROM tipodocumento WHERE cod_tipodocumento = '$cod_tipodocumento'";
+        $resultDocumento = pg_query($conexion, $queryDocumento);
+        $documento = pg_fetch_assoc($resultDocumento);
+        $serie = $documento['serie'];
+        $numero = $documento['numero'];
         
         // Iniciar transacción
         pg_query($conexion, "BEGIN");
         
         try {
-            // 1. GUARDAR COMPROBANTE EN tipodocumento
-            $queryComprobante = "INSERT INTO tipodocumento (cod_tipodocumento, nombre, serie, numero) 
-                                 VALUES ('$cod_comprobante', '$nombre_documento', '$serie', $numero)";
-            $resultComprobante = pg_query($conexion, $queryComprobante);
-            
-            if(!$resultComprobante) {
-                throw new Exception("Error al guardar comprobante: " . pg_last_error($conexion));
+            // 1. ACTUALIZAR NÚMERO DEL DOCUMENTO
+            $nuevo_numero = $numero + 1;
+            $queryUpdateDocumento = "UPDATE tipodocumento SET numero = $nuevo_numero WHERE cod_tipodocumento = '$cod_tipodocumento'";
+            if(!pg_query($conexion, $queryUpdateDocumento)) {
+                throw new Exception("Error al actualizar número de documento: " . pg_last_error($conexion));
             }
             
-            // 2. GUARDAR VENTA PRINCIPAL (SIN total, se calcula desde detalles)
-            $queryVenta = "INSERT INTO venta (cod_venta, cod_usuario, cod_metodopago, cod_tiporeporte, fecha_venta) 
-                           VALUES ('$cod_venta', '$cod_usuario', '$cod_metodopago', 'TR001', CURRENT_DATE)";
+            // 2. GUARDAR VENTA PRINCIPAL CON DATOS COMPLETOS DEL CLIENTE
+            $nombre_mostrar = ($tipo_documento === 'factura') ? $razon_social_cliente : $nombre_cliente;
+            $documento_cliente = ($tipo_documento === 'factura') ? $ruc_cliente : $dni_cliente;
+            
+            $queryVenta = "INSERT INTO venta (cod_venta, cod_usuario, dni, nombre, cod_tipodocumento, email, cod_metodopago, cod_tiporeporte, fecha_venta) 
+                           VALUES ('$cod_venta', '$cod_usuario', '$documento_cliente', '$nombre_mostrar', '$cod_tipodocumento', '$email_cliente', '$cod_metodopago', 'TR001', CURRENT_DATE)";
             $resultVenta = pg_query($conexion, $queryVenta);
             
             if(!$resultVenta) {
@@ -106,12 +179,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
             
             // 3. GUARDAR PRODUCTOS EN DETALLEVENTA Y ACTUALIZAR STOCK
             foreach($productos as $index => $producto) {
-                // Generar código único para detalleventa
-                $cod_detalleventa = 'DV' . $timestamp . $index;
+                // Generar código único para detalleventa - UNO POR PRODUCTO
+                $cod_detalleventa = obtenerSiguienteCodigo($conexion, 'detalleventa', 'DV');
                 
                 // Guardar en detalleventa
                 $queryDetalle = "INSERT INTO detalleventa (cod_detalleventa, cod_venta, cod_producto, cantidad_unidades, precio_unitario, total) 
-                                 VALUES ('$cod_detalleventa', '$cod_venta', '{$producto['codigo']}', {$producto['cantidad']}, {$producto['precio']}, {$producto['total']})";
+                                 VALUES ('$cod_detalleventa', '$cod_venta', '{$producto['codigo']}', {$producto['cantidad']}, '{$producto['precio']}', '{$producto['total']}')";
                 $resultDetalle = pg_query($conexion, $queryDetalle);
                 
                 if(!$resultDetalle) {
@@ -126,34 +199,35 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
                     throw new Exception("Error al actualizar stock para {$producto['nombre']}: " . pg_last_error($conexion));
                 }
                 
-                $cod_inventario = 'INV' . $timestamp . $index;
+                // Registrar en registroinventario - UNO POR PRODUCTO
+                $cod_inventario = obtenerSiguienteCodigo($conexion, 'registroinventario', 'INV');
                 $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total) 
-                                           VALUES ('$cod_inventario', '$cod_usuario', CURRENT_DATE, '{$producto['codigo']}', 'TM002', '{$producto['cantidad']}', '{$producto['precio']}', '{$producto['total']}')";
-                        
-                if(!pg_query($conexion, $query_inventario)) {
+                                     VALUES ('$cod_inventario', '$cod_usuario', CURRENT_DATE, '{$producto['codigo']}', 'TM002', {$producto['cantidad']}, '{$producto['precio']}', '{$producto['total']}')";
+                
+                $resultInventario = pg_query($conexion, $query_inventario);
+                if(!$resultInventario) {
                     throw new Exception("Error al insertar en registro inventario: " . pg_last_error($conexion));
                 }
 
-                // Registrar movimiento de inventario
-                $cod_movimiento = 'MOV' . $timestamp . $index;
+                // Registrar movimiento de inventario - UNO POR PRODUCTO
+                $cod_movimiento = obtenerSiguienteCodigo($conexion, 'movimiento', 'MOV');
                 $queryMovimiento = "INSERT INTO movimiento (cod_movimiento, cod_producto, cod_tipomovimiento, fecha_movimiento, cod_usuario, observacion) 
                                     VALUES ('$cod_movimiento', '{$producto['codigo']}', 'TM002', CURRENT_DATE, '$cod_usuario', 'Venta - $cod_venta')";
                 $resultMovimiento = pg_query($conexion, $queryMovimiento);
                 
-                // Registrar en historial
-                $cod_historial = 'H' . $timestamp . $index;
+                // Registrar en historial - UNO POR PRODUCTO
+                $cod_historial = obtenerSiguienteCodigo($conexion, 'historialproductos', 'HIS');
                 $queryHistorial = "INSERT INTO historialproductos (cod_historialproductos, cod_usuario, cod_producto, cod_tipoaccion, observacion) 
                                    VALUES ('$cod_historial', '$cod_usuario', '{$producto['codigo']}', 'TA001', 'Venta $cod_venta - Cantidad: {$producto['cantidad']}')";
                 pg_query($conexion, $queryHistorial);
             }
             
-            // 4. GUARDAR REPORTE
-            $cod_reporte = 'REP' . $timestamp;
+            // 4. GUARDAR REPORTE - SOLO UNO
             $cod_tiporeporte = 'TR001';
-            $datos_reporte = "Venta $cod_venta - $nombre_documento $serie-$numero - Total: S/ $total - Método: $cod_metodopago";
+            $datos_reporte = "Venta $cod_venta - $nombre_documento $serie-$numero - Cliente: $nombre_mostrar - Total: S/ $total - Método: $cod_metodopago";
             
             $queryReporte = "INSERT INTO reporte (cod_reporte, cod_usuario, fecha_reporte, cod_tiporeporte, cod_tipodocumento, datos_reporte) 
-                             VALUES ('$cod_reporte', '$cod_usuario', CURRENT_DATE, '$cod_tiporeporte', '$cod_comprobante', '$datos_reporte')";
+                             VALUES ('$cod_reporte', '$cod_usuario', CURRENT_DATE, '$cod_tiporeporte', '$cod_tipodocumento', '$datos_reporte')";
             $resultReporte = pg_query($conexion, $queryReporte);
             
             if(!$resultReporte) {
@@ -163,9 +237,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
             // Confirmar transacción
             pg_query($conexion, "COMMIT");
 
-            // Mostrar mensaje de éxito
+            // Mostrar mensaje de éxito con detalles del comprobante
             $_SESSION['venta_exitosa'] = true;
-            $_SESSION['mensaje_exito'] = "✅ Venta procesada correctamente!<br><strong>Código:</strong> $cod_venta<br><strong>Total:</strong> S/ " . number_format($total, 2);
+            $_SESSION['mensaje_exito'] = "✅ Venta procesada correctamente!<br>
+                                         <strong>Comprobante:</strong> $nombre_documento $serie-$numero<br>
+                                         <strong>Código Venta:</strong> $cod_venta<br>
+                                         <strong>Cliente:</strong> $nombre_mostrar<br>
+                                         <strong>Total:</strong> S/ " . number_format($total, 2);
             
             // Redirigir para evitar reenvío del formulario
             header("Location: " . $_SERVER['PHP_SELF']);
@@ -573,6 +651,23 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         min-width: 40px;
         font-size: 0.9em;
     }
+
+    /* ESTILOS PARA LA SECCIÓN DE TIPO DE DOCUMENTO DENTRO DE MÉTODOS DE PAGO */
+    .seleccion-documento {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 20px;
+    }
+
+    .datos-cliente-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        margin-top: 15px;
+    }
   </style>
 </head>
 <body>
@@ -589,7 +684,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                 </div>
 
                 <div class="nav flex-column mt-3">
-                    <a href="dashboard.html" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
                     <a href="nuevaventa.php" class="nav-link active"><ul><i class="fas fa-cash-register"></i>Nueva Venta</ul></a>
                     <a href="registrodevolucion.php" class="nav-link"><ul><i class="fas fa-undo-alt"></i>Registrar Devolución</ul></a>
                     <a href="boletafactura.php" class="nav-link"><ul><i class="fas fa-receipt"></i>Boletas/Facturas</ul></a>
@@ -747,38 +842,13 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                     </div>
                 </section>
 
-                <!-- FORMULARIO PRINCIPAL PARA ENVIAR VENTA -->
+                <!-- FORMULARIO DE VENTA MEJORADO -->
                 <form id="formVenta" method="POST" action="">
                     <input type="hidden" name="finalizar_venta" value="1">
-                    <input type="hidden" name="cod_metodopago" id="inputMetodoPago" value="mp001">
+                    <input type="hidden" name="cod_metodopago" id="inputMetodoPago" value="MP001">
                     <input type="hidden" name="tipo_documento" id="inputTipoDocumento" value="boleta">
                     <input type="hidden" name="total" id="inputTotal" value="0">
                     <input type="hidden" name="productos_json" id="inputProductosJson" value="[]">
-
-                    <!-- SECCIÓN PARA DATOS DEL CLIENTE (SOLO FACTURA) -->
-                    <div class="datos-cliente-section mb-4" id="datosClienteSection" style="display: none;">
-                        <div class="card border-warning">
-                            <div class="card-header bg-warning text-dark">
-                                <h5 class="mb-0"><i class="fas fa-user-tie"></i> Datos del Cliente - Factura</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label for="inputRUC" class="form-label">RUC *</label>
-                                        <input type="text" name="ruc" id="inputRUC" class="form-control" placeholder="11 dígitos" maxlength="11">
-                                    </div>
-                                    <div class="col-md-8">
-                                        <label for="inputRazonSocial" class="form-label">Razón Social *</label>
-                                        <input type="text" name="razon_social" id="inputRazonSocial" class="form-control" placeholder="Nombre o razón social del cliente">
-                                    </div>
-                                    <div class="col-12">
-                                        <label for="inputDireccion" class="form-label">Dirección</label>
-                                        <input type="text" name="direccion" id="inputDireccion" class="form-control" placeholder="Dirección del cliente">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <section class="panel-venta">
                         <div class="venta-header">
@@ -813,8 +883,35 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                             <div class="metodos-pago">
                                 <h4><i class="fas fa-credit-card"></i> Método de Pago</h4>
                                 
-                                <div class="tipo-documento">
-                                    <label class="form-label"><i class="fas fa-file-invoice"></i> Tipo de Documento:</label>
+                                <div class="metodos-grid">
+                                    <?php
+                                    if ($resultMetodos && pg_num_rows($resultMetodos) > 0) {
+                                        pg_result_seek($resultMetodos, 0);
+                                        while($metodo = pg_fetch_assoc($resultMetodos)) {
+                                            $active = $metodo['cod_metodopago'] === 'MP001' ? 'active' : '';
+                                            $icon = '';
+                                            switch($metodo['cod_metodopago']) {
+                                                case 'MP001': $icon = 'fa-money-bill-wave'; break;
+                                                case 'MP002': $icon = 'fa-credit-card'; break;
+                                                case 'MP003': $icon = 'fa-credit-card'; break;
+                                                case 'MP004': $icon = 'fa-exchange-alt'; break;
+                                                case 'MP005': $icon = 'fa-mobile-alt'; break;
+                                                case 'MP006': $icon = 'fa-mobile-alt'; break;
+                                                default: $icon = 'fa-money-bill-wave';
+                                            }
+                                            echo "
+                                            <button type='button' class='metodo-btn $active' data-metodo='{$metodo['cod_metodopago']}'>
+                                                <i class='fas $icon'></i> {$metodo['nombre']}
+                                            </button>
+                                            ";
+                                        }
+                                    }
+                                    ?>
+                                </div>
+
+                                <!-- SECCIÓN DE TIPO DE DOCUMENTO INTEGRADA -->
+                                <div class="seleccion-documento">
+                                    <h5><i class="fas fa-file-invoice"></i> Tipo de Comprobante</h5>
                                     <div class="documento-botones">
                                         <button type="button" class="btn documento-btn active" data-tipo="boleta">
                                             <i class="fas fa-receipt"></i> Boleta
@@ -824,23 +921,39 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                                         </button>
                                     </div>
                                 </div>
-                                
-                                <div class="metodos-grid">
-                                    <?php
-                                    if ($resultMetodos && pg_num_rows($resultMetodos) > 0) {
-                                        pg_result_seek($resultMetodos, 0);
-                                        while($metodo = pg_fetch_assoc($resultMetodos)) {
-                                            $active = $metodo['cod_metodopago'] === 'mp001' ? 'active' : '';
-                                            $icon = $metodo['cod_metodopago'] === 'mp001' ? 'fa-money-bill-wave' : 
-                                                   ($metodo['cod_metodopago'] === 'mp002' ? 'fa-credit-card' : 'fa-mobile-alt');
-                                            echo "
-                                            <button type='button' class='metodo-btn $active' data-metodo='{$metodo['cod_metodopago']}'>
-                                                <i class='fas $icon'></i> {$metodo['nombre']}
-                                            </button>
-                                            ";
-                                        }
-                                    }
-                                    ?>
+
+                                <!-- DATOS DEL CLIENTE INTEGRADOS -->
+                                <div class="datos-cliente-card" id="datosClienteCard">
+                                    <h5><i class="fas fa-user"></i> Datos del Cliente</h5>
+                                    <div class="row g-3 mt-2">
+                                        <!-- DATOS PARA BOLETA (VISIBLE POR DEFECTO) -->
+                                        <div class="col-md-6" id="datosBoleta">
+                                            <label for="inputDNI" class="form-label">DNI (Opcional para boleta)</label>
+                                            <input type="text" name="dni_cliente" id="inputDNI" class="form-control" placeholder="8 dígitos" maxlength="8">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="inputNombre" class="form-label">Nombre Completo *</label>
+                                            <input type="text" name="nombre_cliente" id="inputNombre" class="form-control" placeholder="Nombre del cliente" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="inputEmail" class="form-label">Email (Opcional - para envío de comprobante)</label>
+                                            <input type="email" name="email_cliente" id="inputEmail" class="form-control" placeholder="correo@ejemplo.com">
+                                        </div>
+                                        
+                                        <!-- DATOS ADICIONALES PARA FACTURA (OCULTOS INICIALMENTE) -->
+                                        <div class="col-md-6" id="datosFacturaRUC" style="display: none;">
+                                            <label for="inputRUC" class="form-label">RUC *</label>
+                                            <input type="text" name="ruc_cliente" id="inputRUC" class="form-control" placeholder="11 dígitos" maxlength="11">
+                                        </div>
+                                        <div class="col-md-6" id="datosFacturaRazon" style="display: none;">
+                                            <label for="inputRazonSocial" class="form-label">Razón Social *</label>
+                                            <input type="text" name="razon_social_cliente" id="inputRazonSocial" class="form-control" placeholder="Razón social del cliente">
+                                        </div>
+                                        <div class="col-12" id="datosFacturaDireccion" style="display: none;">
+                                            <label for="inputDireccion" class="form-label">Dirección Fiscal *</label>
+                                            <input type="text" name="direccion_cliente" id="inputDireccion" class="form-control" placeholder="Dirección completa del cliente">
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="monto-efectivo" id="montoEfectivo">
@@ -865,7 +978,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
     <script>
     // Variables globales para la venta
     let productosVenta = [];
-    let metodoPagoSeleccionado = 'mp001';
+    let metodoPagoSeleccionado = 'MP001';
     let tipoDocumentoSeleccionado = 'boleta';
     let subtotal = 0;
     let igv = 0;
@@ -891,7 +1004,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                 document.getElementById('inputMetodoPago').value = metodoPagoSeleccionado;
                 
                 const montoEfectivo = document.getElementById('montoEfectivo');
-                if (metodoPagoSeleccionado === 'mp001') {
+                if (metodoPagoSeleccionado === 'MP001') {
                     montoEfectivo.style.display = 'block';
                     actualizarCambio();
                 } else {
@@ -940,18 +1053,117 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         }
     });
 
+    // ACTUALIZAR LA FUNCIÓN actualizarInterfazPorDocumento
     function actualizarInterfazPorDocumento() {
         const btnFinalizar = document.getElementById('btnFinalizar');
-        const datosClienteSection = document.getElementById('datosClienteSection');
+        const datosBoleta = document.getElementById('datosBoleta');
+        const datosFacturaRUC = document.getElementById('datosFacturaRUC');
+        const datosFacturaRazon = document.getElementById('datosFacturaRazon');
+        const datosFacturaDireccion = document.getElementById('datosFacturaDireccion');
         
         if (tipoDocumentoSeleccionado === 'factura') {
             btnFinalizar.innerHTML = '<i class="fas fa-file-invoice-dollar"></i> Generar Factura';
-            datosClienteSection.style.display = 'block';
+            datosBoleta.style.display = 'none';
+            datosFacturaRUC.style.display = 'block';
+            datosFacturaRazon.style.display = 'block';
+            datosFacturaDireccion.style.display = 'block';
+            
+            // Hacer requeridos los campos de factura
+            document.getElementById('inputRUC').required = true;
+            document.getElementById('inputRazonSocial').required = true;
+            document.getElementById('inputDireccion').required = true;
+            document.getElementById('inputNombre').required = false;
         } else {
             btnFinalizar.innerHTML = '<i class="fas fa-check-circle"></i> Finalizar Venta';
-            datosClienteSection.style.display = 'none';
+            datosBoleta.style.display = 'block';
+            datosFacturaRUC.style.display = 'none';
+            datosFacturaRazon.style.display = 'none';
+            datosFacturaDireccion.style.display = 'none';
+            
+            // Quitar requerido de campos de factura
+            document.getElementById('inputRUC').required = false;
+            document.getElementById('inputRazonSocial').required = false;
+            document.getElementById('inputDireccion').required = false;
+            document.getElementById('inputNombre').required = true;
         }
     }
+
+    // ACTUALIZAR LA VALIDACIÓN DEL FORMULARIO
+    document.getElementById('formVenta').addEventListener('submit', function(e) {
+        if (productosVenta.length === 0) {
+            e.preventDefault();
+            alert('❌ No hay productos en la venta');
+            return;
+        }
+        
+        // Validaciones específicas por tipo de documento
+        if (tipoDocumentoSeleccionado === 'factura') {
+            const ruc = document.getElementById('inputRUC').value;
+            const razonSocial = document.getElementById('inputRazonSocial').value;
+            const direccion = document.getElementById('inputDireccion').value;
+            
+            if (!ruc || ruc.length !== 11) {
+                e.preventDefault();
+                alert('❌ Para factura debe ingresar un RUC válido de 11 dígitos');
+                document.getElementById('inputRUC').focus();
+                return;
+            }
+            
+            if (!razonSocial.trim()) {
+                e.preventDefault();
+                alert('❌ Para factura debe ingresar la Razón Social del cliente');
+                document.getElementById('inputRazonSocial').focus();
+                return;
+            }
+            
+            if (!direccion.trim()) {
+                e.preventDefault();
+                alert('❌ Para factura debe ingresar la dirección del cliente');
+                document.getElementById('inputDireccion').focus();
+                return;
+            }
+        } else {
+            // Para boleta, validar DNI si se proporciona
+            const dni = document.getElementById('inputDNI').value;
+            const nombre = document.getElementById('inputNombre').value;
+            
+            if (!nombre.trim()) {
+                e.preventDefault();
+                alert('❌ Debe ingresar el nombre del cliente');
+                document.getElementById('inputNombre').focus();
+                return;
+            }
+            
+            if (dni && dni.length !== 8) {
+                e.preventDefault();
+                alert('❌ El DNI debe tener 8 dígitos');
+                document.getElementById('inputDNI').focus();
+                return;
+            }
+        }
+        
+        if (metodoPagoSeleccionado === 'MP001') {
+            const efectivo = parseFloat(document.getElementById('inputEfectivo').value) || 0;
+            if (efectivo <= 0) {
+                e.preventDefault();
+                alert('❌ Ingrese el monto en efectivo recibido');
+                document.getElementById('inputEfectivo').focus();
+                return;
+            }
+            
+            if (efectivo < total) {
+                e.preventDefault();
+                alert(`❌ El efectivo recibido (S/ ${efectivo.toFixed(2)}) es menor al total de la venta (S/ ${total.toFixed(2)})`);
+                document.getElementById('inputEfectivo').focus();
+                return;
+            }
+        }
+        
+        // Mostrar mensaje de procesamiento
+        const btnFinalizar = document.getElementById('btnFinalizar');
+        btnFinalizar.disabled = true;
+        btnFinalizar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    });
 
     // Función para agregar productos
     function agregarProducto(codigo, nombre, precio, stock) {
@@ -1037,10 +1249,13 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
             listaProductos.innerHTML = html;
         }
         
-        // Calcular totales
+        // Calcular totales (IGV incluido en el precio)
+        // El precio ya incluye IGV, por lo que el subtotal es la suma de precios * cantidad
+        // El IGV se calcula como el 18% del subtotal
         igv = parseFloat((subtotal * 0.18).toFixed(2));
-        total = parseFloat((subtotal + igv).toFixed(2));
-        document.getElementById('subtotal').textContent = 'S/ ' + subtotal.toFixed(2);
+        total = parseFloat((subtotal).toFixed(2)); // El total es igual al subtotal porque el IGV ya está incluido
+        
+        document.getElementById('subtotal').textContent = 'S/ ' + (subtotal - igv).toFixed(2);
         document.getElementById('igv').textContent = 'S/ ' + igv.toFixed(2);
         document.getElementById('totalVenta').textContent = 'S/ ' + total.toFixed(2);
         
@@ -1053,7 +1268,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         btnFinalizar.disabled = productosVenta.length === 0;
         
         // Actualizar cambio si es pago en efectivo
-        if (metodoPagoSeleccionado === 'mp001') {
+        if (metodoPagoSeleccionado === 'MP001') {
             actualizarCambio();
         }
     }
@@ -1102,57 +1317,6 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
     }
 
     document.getElementById('inputEfectivo').addEventListener('input', actualizarCambio);
-
-    // Validar formulario antes de enviar
-    document.getElementById('formVenta').addEventListener('submit', function(e) {
-        if (productosVenta.length === 0) {
-            e.preventDefault();
-            alert('❌ No hay productos en la venta');
-            return;
-        }
-        
-        // Validar datos del cliente para factura
-        if (tipoDocumentoSeleccionado === 'factura') {
-            const ruc = document.getElementById('inputRUC').value;
-            const razonSocial = document.getElementById('inputRazonSocial').value;
-            
-            if (!ruc || ruc.length !== 11) {
-                e.preventDefault();
-                alert('❌ Para factura debe ingresar un RUC válido de 11 dígitos');
-                document.getElementById('inputRUC').focus();
-                return;
-            }
-            
-            if (!razonSocial) {
-                e.preventDefault();
-                alert('❌ Para factura debe ingresar la Razón Social del cliente');
-                document.getElementById('inputRazonSocial').focus();
-                return;
-            }
-        }
-        
-        if (metodoPagoSeleccionado === 'mp001') {
-            const efectivo = parseFloat(document.getElementById('inputEfectivo').value) || 0;
-            if (efectivo <= 0) {
-                e.preventDefault();
-                alert('❌ Ingrese el monto en efectivo recibido');
-                document.getElementById('inputEfectivo').focus();
-                return;
-            }
-            
-            if (efectivo < total) {
-                e.preventDefault();
-                alert(`❌ El efectivo recibido (S/ ${efectivo.toFixed(2)}) es menor al total de la venta (S/ ${total.toFixed(2)})`);
-                document.getElementById('inputEfectivo').focus();
-                return;
-            }
-        }
-        
-        // Mostrar mensaje de procesamiento
-        const btnFinalizar = document.getElementById('btnFinalizar');
-        btnFinalizar.disabled = true;
-        btnFinalizar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-    });
 
     const dropdownBtn = document.getElementById("dropdownBtn");
     const dropdownList = document.getElementById("dropdownList");
