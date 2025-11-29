@@ -27,7 +27,7 @@
         $inicialApellido=substr($apellidoencargado,0,1);
 
         if (!isset($_SESSION['nombreusuarioencargado'])) {
-            header("Location: ../login.php");
+            header("Location: ../login.html");
             exit;
         }
 
@@ -78,8 +78,22 @@
 
                 // Validar que todos los campos requeridos estén presentes
                 if(empty($codprod) || empty($nombreprod) || empty($precio_costo) || empty($precio_venta) || 
-                   empty($stockprod) || empty($unidades_caja) || empty($categoria_id) || empty($proveedor_id)) {
-                    echo "<script>alert('Todos los campos son obligatorios');</script>";
+                    empty($unidades_caja) || empty($categoria_id) || empty($proveedor_id)) {
+                    echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
+                                        <script>
+                                            document.addEventListener('DOMContentLoaded', function(){
+                                                Swal.fire({
+                                                    icon: 'warning',
+                                                    title: 'Faltan campos',
+                                                    text: 'Complete todos los campos',
+                                                    width: '350px'
+                                                }).then(() => {
+                                                    window.location.href = '" . $_SERVER['PHP_SELF'] . "';
+                                                });
+                                            });
+                                        </script>";
+                                        exit;
+                    
                 } else {
                     try {
                         // Verificar si el código ya existe
@@ -94,11 +108,11 @@
                             $precio_compra_unidad = $precio_costo / $unidades_caja;
 
                             // CORRECCIÓN: Insertar producto con precio_caja y precio_compra_unidad
-                            $sql = "INSERT INTO producto (cod_producto, nombre, precio_caja, precio_compra_unidad, precio_venta, unidades_por_caja, stock, cod_categoria, cod_proveedor) 
-                                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)";
+                            $sql = "INSERT INTO producto (cod_producto, nombre, precio_caja, precio_compra_unidad, precio_venta, unidades_por_caja, cod_categoria, cod_proveedor) 
+                                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)";
                             $result = pg_query_params($conexion, $sql, array(
                                 $codprod, $nombreprod, $precio_costo, $precio_compra_unidad, $precio_venta, 
-                                $unidades_caja, $stockprod, $categoria_id, $proveedor_id
+                                $unidades_caja, $categoria_id, $proveedor_id
                             ));
 
                             if($result) {
@@ -147,14 +161,13 @@
                             precio_compra_unidad = $3,
                             precio_venta = $4, 
                             unidades_por_caja = $5, 
-                            stock = $6, 
-                            cod_categoria = $7, 
-                            cod_proveedor = $8 
-                            WHERE cod_producto = $9";
+                            cod_categoria = $6, 
+                            cod_proveedor = $7 
+                            WHERE cod_producto = $8";
                     
                     $result = pg_query_params($conexion, $sql, array(
                         $nombreprod, $precio_costo, $precio_compra_unidad, $precio_venta, $unidades_caja, 
-                        $stockprod, $categoria_id, $proveedor_id, $codprod
+                        $categoria_id, $proveedor_id, $codprod
                     ));
 
                     if($result) {
@@ -255,12 +268,13 @@
                 </div>
 
                 <div class="nav flex-column mt-3">
-                    <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
-                    <a href="gestionproductos.php" class="nav-link active"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
-                    <a href="almacenproveedores.php" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
-                    <a href="entradaproveedor.php" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
-                    <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
-                    <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
+                    <a href="dashboard.html" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="gestionproductos.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
+                    <a href="almacenproveedores.html" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
+                    <a href="entradaproveedor.php" class="nav-link active"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
+                    <a href="registrodevolucioncompra.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Devoluciones</ul></a>
+                    <a href="notificaciones.html" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
+                    <a href="reportes.html" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
                 </div>
             </div>
         </main>
@@ -350,7 +364,7 @@
                                         <div class="col-md-6">
                                             <label class="form-label" for="stockProducto">Stock *</label>
                                             <input type="number" class="form-control" id="stockProducto" name="stockProducto" 
-                                                   value="<?php echo $producto_editar ? $producto_editar['stock'] : ''; ?>" required>
+                                                   value="<?php echo $producto_editar ? $producto_editar['stock'] : ''; ?>" disabled>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label" for="categoriaProducto">Categoría *</label>
@@ -628,7 +642,7 @@
             const unicajaprod=document.getElementById("unidadesCaja").value.trim();
             const precosprod=document.getElementById("precioCosto").value.trim();
             const prevenprod=document.getElementById("precioVenta").value.trim();
-            const stockprod=document.getElementById("stockProducto").value.trim();
+            const stocprod=document.getElementById("stockProducto").value.trim();
 
 
             if(codprod===""){

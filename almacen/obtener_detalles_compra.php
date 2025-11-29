@@ -99,3 +99,12 @@ echo "<p><strong>Total de productos diferentes:</strong> " . pg_num_rows($result
 echo "<p><strong>Total general de la compra:</strong> S/ " . number_format($total_general, 2) . "</p>";
 echo "</div>";
 ?>
+
+<script src="html2pdf.bundle.min.js"></script>
+<script setup>
+    import {convertHtmlPdf} from  '../js/descarga.js'
+
+    const generarPdf=()=>{
+        convertHtmlPdf('detalleCompra')
+    }
+</script>

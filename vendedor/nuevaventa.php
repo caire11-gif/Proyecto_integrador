@@ -1,3 +1,4 @@
+<?php date_default_timezone_set('America/Lima'); ?>
 <?php
 // CONEXIÓN A LA BASE DE DATOS
 $conexion = pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
@@ -10,14 +11,150 @@ if(!$conexion){
 session_start();
 $usuariovendedor = $_SESSION['nombreusuariovendedor'] ?? '';
 $apellidovendedor = $_SESSION['apellidousuariovendedor'] ?? '';
-$cod_usuario_session = $_SESSION['cod_usuario'] ?? 'USER001';
+$cod_usuario_session = $_SESSION['cod_usuario'] ?? 'USU001';
 
 $inicialNombre = substr($usuariovendedor, 0, 1);
 $inicialApellido = substr($apellidovendedor, 0, 1);
 
-// FUNCIONES PARA GENERAR CÓDIGOS ÚNICOS EN ORDEN - CORREGIDO
+// TOKEN DE API
+$token_sunat = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImRhY3EzMjFAZ21haWwuY29tIn0.XJHzriTxqk7AP-EGj7E2_srtYlbhd1e0X65tQznx3qY';
+
+// FUNCIÓN MEJORADA PARA CONSULTAR RUC
+function consultarRUC($ruc, $token) {
+    $url = "https://dniruc.apisperu.com/api/v1/ruc/{$ruc}?token={$token}";
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+    
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($http_code == 200 && $response) {
+        $data = json_decode($response, true);
+        
+        if(isset($data['ruc'])) {
+            return procesarDatosRUC($data);
+        } else {
+            return [
+                'success' => false,
+                'error' => 'RUC no encontrado'
+            ];
+        }
+    } else {
+        return [
+            'success' => false,
+            'error' => 'Error en la conexión con SUNAT'
+        ];
+    }
+}
+
+// FUNCIÓN MEJORADA PARA PROCESAR DATOS RUC
+function procesarDatosRUC($datos) {
+    // Determinar tipo de contribuyente
+    $primerosDigitos = substr($datos['ruc'], 0, 2);
+    $tipo_contribuyente = in_array($primerosDigitos, ['10', '15', '17', '20']) ? 'persona_natural' : 'empresa';
+    
+    // Procesar datos según el tipo
+    $razon_social = $datos['razonSocial'] ?? '';
+    $nombre_comercial = $datos['nombreComercial'] ?? '';
+    $direccion = $datos['direccion'] ?? '';
+    $estado = $datos['estado'] ?? '';
+    $condicion = $datos['condicion'] ?? '';
+    
+    // MEJORA: Para personas naturales, usar nombre comercial si existe, sino razón social
+    if ($tipo_contribuyente === 'persona_natural') {
+        // Si es persona natural y tiene nombre comercial, usarlo como "nombre"
+        if (!empty($nombre_comercial) && $nombre_comercial !== '-') {
+            $razon_social_mostrar = $nombre_comercial;
+        } else {
+            $razon_social_mostrar = $razon_social;
+        }
+    } else {
+        // Para empresas, usar razón social
+        $razon_social_mostrar = $razon_social;
+    }
+    
+    // MEJORA: Manejo de dirección - si está vacía o es inválida, no mostrar nada
+    $direccion = trim($direccion);
+    if(empty($direccion) || $direccion === '-' || $direccion === 'NULL' || $direccion === 'DIRECCIÓN NO ENCONTRADA') {
+        $direccion = ''; // Ahora queda vacío en lugar de mostrar "DIRECCIÓN NO ENCONTRADA"
+    }
+    
+    // MEJORA: Limpiar nombre comercial - solo mostrar si es diferente a razón social y no está vacío
+    $nombre_comercial = trim($nombre_comercial);
+    if(empty($nombre_comercial) || $nombre_comercial === '-' || $nombre_comercial === $razon_social) {
+        $nombre_comercial = '';
+    }
+    
+    // Determinar el texto para mostrar según el tipo
+    if ($tipo_contribuyente === 'persona_natural') {
+        $tipo_texto = "✅ PERSONA NATURAL RUC encontrado:";
+    } else {
+        $tipo_texto = "✅ EMPRESA RUC encontrado:";
+    }
+    
+    // Validar estado del contribuyente
+    $estado_alert = '';
+    if (strtoupper($estado) !== 'ACTIVO') {
+        $estado_alert = "⚠️ <strong>ALERTA:</strong> El contribuyente se encuentra con estado: <strong>{$estado}</strong>. Los comprobantes de pago o notas de débito emitidos por este contribuyente no dan derecho a crédito fiscal del IGV.";
+    }
+    
+    return [
+        'success' => true,
+        'tipo' => $tipo_contribuyente,
+        'razon_social' => trim($razon_social),
+        'razon_social_mostrar' => trim($razon_social_mostrar),
+        'nombre_comercial' => $nombre_comercial,
+        'direccion' => $direccion,
+        'estado' => trim($estado),
+        'condicion' => trim($condicion),
+        'tipo_texto' => $tipo_texto,
+        'estado_alert' => $estado_alert
+    ];
+}
+
+// PROCESAR CONSULTA RUC MEJORADA
+if(isset($_POST['consultar_ruc'])) {
+    $ruc = $_POST['ruc_consulta'] ?? '';
+    
+    if(!empty($ruc) && strlen($ruc) === 11) {
+        $consulta = consultarRUC($ruc, $token_sunat);
+        
+        if($consulta['success']) {
+            echo json_encode([
+                'success' => true,
+                'tipo' => $consulta['tipo'],
+                'razon_social' => $consulta['razon_social'],
+                'razon_social_mostrar' => $consulta['razon_social_mostrar'],
+                'nombre_comercial' => $consulta['nombre_comercial'],
+                'direccion' => $consulta['direccion'],
+                'estado' => $consulta['estado'],
+                'condicion' => $consulta['condicion'],
+                'tipo_texto' => $consulta['tipo_texto'],
+                'estado_alert' => $consulta['estado_alert']
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false,
+                'error' => 'RUC no encontrado'
+            ]);
+        }
+    } else {
+        echo json_encode([
+            'success' => false,
+            'error' => 'RUC debe tener 11 dígitos'
+        ]);
+    }
+    exit;
+}
+
+// FUNCIONES PARA GENERAR CÓDIGOS ÚNICOS EN ORDEN
 function obtenerSiguienteCodigo($conexion, $tabla, $prefijo) {
-    // Mapear nombres de columnas y formatos según tu estructura de base de datos
     $configuraciones = [
         'venta' => ['columna' => 'cod_venta', 'formato' => 'V'],
         'detalleventa' => ['columna' => 'cod_detalleventa', 'formato' => 'DV'],
@@ -26,32 +163,35 @@ function obtenerSiguienteCodigo($conexion, $tabla, $prefijo) {
         'historialproductos' => ['columna' => 'cod_historialproductos', 'formato' => 'HIS'],
         'reporte' => ['columna' => 'cod_reporte', 'formato' => 'REP']
     ];
-    
+
     $config = $configuraciones[$tabla] ?? ['columna' => "cod_$tabla", 'formato' => $prefijo];
     $columna = $config['columna'];
     $formato_prefijo = $config['formato'];
-    
-    $query = "SELECT $columna FROM $tabla ORDER BY $columna DESC LIMIT 1";
+
+    // Ordenar numéricamente
+    $query = "
+        SELECT $columna 
+        FROM $tabla 
+        WHERE $columna LIKE '{$formato_prefijo}%'
+        ORDER BY CAST(SUBSTRING($columna FROM '[0-9]+$') AS INTEGER) DESC
+        LIMIT 1
+    ";
+
     $result = pg_query($conexion, $query);
-    
-    if($result && pg_num_rows($result) > 0) {
+    if(!$result){
+        throw new Exception("Error en la consulta: " . pg_last_error($conexion));
+    }
+
+    if(pg_num_rows($result) > 0) {
         $ultimo_cod = pg_fetch_assoc($result)[$columna];
-        
-        // Extraer el número del último código (ej: "INV1" -> 1, "INV15" -> 15)
-        if (preg_match('/\d+$/', $ultimo_cod, $matches)) {
-            $numero = intval($matches[0]);
-            $nuevo_numero = $numero + 1;
-        } else {
-            // Si no encuentra número, empezar desde 1
-            $nuevo_numero = 1;
-        }
+        preg_match('/\d+$/', $ultimo_cod, $matches);
+        $nuevo_numero = intval($matches[0]) + 1;
     } else {
-        // Si no hay registros, empezar desde 1
         $nuevo_numero = 1;
     }
-    
-    // Formatear según el formato específico (INV1, INV2, etc.)
-    return $formato_prefijo . $nuevo_numero;
+
+    // Ceros a la izquierda
+    return sprintf("%s%03d", $formato_prefijo, $nuevo_numero);
 }
 
 // VERIFICAR Y CREAR DATOS MAESTROS SI NO EXISTEN
@@ -111,10 +251,10 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
     $tipo_documento = $_POST['tipo_documento'];
     $productos = json_decode($_POST['productos_json'], true);
     
-    // DATOS DEL CLIENTE
+    // DATOS DEL CLIENTE - MANEJAR TANTO BOLETA COMO FACTURA
     $dni_cliente = $_POST['dni_cliente'] ?? '';
     $nombre_cliente = $_POST['nombre_cliente'] ?? '';
-    $email_cliente = $_POST['email_cliente'] ?? '';
+    $email_cliente = $_POST['email_cliente'] ?? $_POST['email_cliente_factura'] ?? '';
     $ruc_cliente = $_POST['ruc_cliente'] ?? '';
     $razon_social_cliente = $_POST['razon_social_cliente'] ?? '';
     $direccion_cliente = $_POST['direccion_cliente'] ?? '';
@@ -127,13 +267,15 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
             $error_venta = "Para factura debe ingresar un RUC válido de 11 dígitos";
         } elseif(empty($razon_social_cliente)) {
             $error_venta = "Para factura debe ingresar la Razón Social del cliente";
-        } elseif(empty($direccion_cliente)) {
-            $error_venta = "Para factura debe ingresar la dirección del cliente";
         }
+        // LA DIRECCIÓN AHORA ES OPCIONAL
     } else {
         // Para boleta, validar DNI si se proporciona
         if(!empty($dni_cliente) && strlen($dni_cliente) !== 8) {
             $error_venta = "El DNI debe tener 8 dígitos";
+        }
+        if(empty($nombre_cliente)) {
+            $error_venta = "Para boleta debe ingresar el nombre del cliente";
         }
     }
     
@@ -142,9 +284,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
         if($tipo_documento === 'factura') {
             $cod_tipodocumento = 'TD002'; // Factura
             $nombre_documento = 'Factura';
+            $nombre_mostrar = $razon_social_cliente;
+            $documento_cliente = $ruc_cliente;
         } else {
             $cod_tipodocumento = 'TD001'; // Boleta
             $nombre_documento = 'Boleta';
+            $nombre_mostrar = $nombre_cliente;
+            $documento_cliente = $dni_cliente;
         }
         
         // Obtener serie y número actual del documento
@@ -153,6 +299,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
         $documento = pg_fetch_assoc($resultDocumento);
         $serie = $documento['serie'];
         $numero = $documento['numero'];
+        $fecha_salida = date('Y-m-d H:i:s');
         
         // Iniciar transacción
         pg_query($conexion, "BEGIN");
@@ -166,11 +313,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
             }
             
             // 2. GUARDAR VENTA PRINCIPAL CON DATOS COMPLETOS DEL CLIENTE
-            $nombre_mostrar = ($tipo_documento === 'factura') ? $razon_social_cliente : $nombre_cliente;
-            $documento_cliente = ($tipo_documento === 'factura') ? $ruc_cliente : $dni_cliente;
-            
             $queryVenta = "INSERT INTO venta (cod_venta, cod_usuario, dni, nombre, cod_tipodocumento, email, cod_metodopago, cod_tiporeporte, fecha_venta) 
-                           VALUES ('$cod_venta', '$cod_usuario', '$documento_cliente', '$nombre_mostrar', '$cod_tipodocumento', '$email_cliente', '$cod_metodopago', 'TR001', CURRENT_DATE)";
+                           VALUES ('$cod_venta', '$cod_usuario', '$documento_cliente', '$nombre_mostrar', '$cod_tipodocumento', '$email_cliente', '$cod_metodopago', 'TR001', '$fecha_salida')";
             $resultVenta = pg_query($conexion, $queryVenta);
             
             if(!$resultVenta) {
@@ -202,7 +346,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
                 // Registrar en registroinventario - UNO POR PRODUCTO
                 $cod_inventario = obtenerSiguienteCodigo($conexion, 'registroinventario', 'INV');
                 $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total) 
-                                     VALUES ('$cod_inventario', '$cod_usuario', CURRENT_DATE, '{$producto['codigo']}', 'TM002', {$producto['cantidad']}, '{$producto['precio']}', '{$producto['total']}')";
+                                     VALUES ('$cod_inventario', '$cod_usuario', '$fecha_salida', '{$producto['codigo']}', 'TM002', {$producto['cantidad']}, '{$producto['precio']}', '{$producto['total']}')";
                 
                 $resultInventario = pg_query($conexion, $query_inventario);
                 if(!$resultInventario) {
@@ -212,7 +356,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
                 // Registrar movimiento de inventario - UNO POR PRODUCTO
                 $cod_movimiento = obtenerSiguienteCodigo($conexion, 'movimiento', 'MOV');
                 $queryMovimiento = "INSERT INTO movimiento (cod_movimiento, cod_producto, cod_tipomovimiento, fecha_movimiento, cod_usuario, observacion) 
-                                    VALUES ('$cod_movimiento', '{$producto['codigo']}', 'TM002', CURRENT_DATE, '$cod_usuario', 'Venta - $cod_venta')";
+                                    VALUES ('$cod_movimiento', '{$producto['codigo']}', 'TM002', CURRENT_TIMESTAMP, '$cod_usuario', 'Venta - $cod_venta')";
                 $resultMovimiento = pg_query($conexion, $queryMovimiento);
                 
                 // Registrar en historial - UNO POR PRODUCTO
@@ -227,7 +371,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_venta'])) {
             $datos_reporte = "Venta $cod_venta - $nombre_documento $serie-$numero - Cliente: $nombre_mostrar - Total: S/ $total - Método: $cod_metodopago";
             
             $queryReporte = "INSERT INTO reporte (cod_reporte, cod_usuario, fecha_reporte, cod_tiporeporte, cod_tipodocumento, datos_reporte) 
-                             VALUES ('$cod_reporte', '$cod_usuario', CURRENT_DATE, '$cod_tiporeporte', '$cod_tipodocumento', '$datos_reporte')";
+                             VALUES ('$cod_reporte', '$cod_usuario', CURRENT_TIMESTAMP, '$cod_tiporeporte', '$cod_tipodocumento', '$datos_reporte')";
             $resultReporte = pg_query($conexion, $queryReporte);
             
             if(!$resultReporte) {
@@ -306,7 +450,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/vendedor-estilo.css">
   <link rel="stylesheet" href="css/vendedor-boton/boton.css">
-  <style>
+<style>
     .documento-botones {
         display: flex;
         gap: 10px;
@@ -399,16 +543,23 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
     .producto-controls {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 15px;
     }
 
-    .cantidad-controls {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: #f8f9fa;
-        padding: 5px 10px;
+    .cantidad-input {
+        width: 80px;
+        text-align: center;
+        border: 1px solid #ced4da;
         border-radius: 6px;
+        padding: 8px 12px;
+        font-weight: 500;
+        font-size: 1em;
+    }
+
+    .cantidad-input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        outline: none;
     }
 
     .resultado-item {
@@ -424,7 +575,6 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         background-color: #f8f9fa;
     }
 
-    /* ESTILOS PARA EL MENSAJE DE ÉXITO */
     .alert-fixed-top {
         position: fixed;
         top: 20px;
@@ -448,12 +598,9 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         position: relative;
     }
 
-    /* Asegurar que el contenido no se mueva */
-    .contenido-principal {
+        .contenido-principal {
         transition: all 0.3s ease;
     }
-
-    /* NUEVOS ESTILOS PARA MEJOR ORGANIZACIÓN DEL PANEL DERECHO */
     .panel-venta {
         background: #f8f9fa;
         border-radius: 12px;
@@ -614,6 +761,8 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         font-size: 1.1em;
         min-width: 100px;
         text-align: right;
+        font-weight: 600;
+        color: #2c3e50;
     }
 
     .btn-quitar {
@@ -621,7 +770,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         color: white;
         border: none;
         border-radius: 6px;
-        padding: 6px 10px;
+        padding: 8px 12px;
         transition: all 0.3s ease;
     }
 
@@ -630,30 +779,63 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         transform: scale(1.05);
     }
 
-    .btn-cantidad {
-        width: 35px;
-        height: 35px;
+        .consulta-ruc-section {
+        background: #e8f4fd;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #b8daff;
+        margin-bottom: 15px;
+    }
+
+    .consulta-ruc-input {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #dee2e6;
-        background: white;
+        gap: 10px;
+        align-items: flex-end;
+    }
+
+    .ruc-loading {
+        display: none;
+        text-align: center;
+        padding: 10px;
+    }
+
+    .ruc-result {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        display: none;
+    }
+
+    .ruc-success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+    }
+
+    .ruc-error {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+    }
+
+        .datos-factura-simplificado .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+
+    .datos-factura-simplificado .form-control {
+        border: 1px solid #ced4da;
         border-radius: 6px;
-        transition: all 0.2s ease;
+        padding: 8px 12px;
     }
 
-    .btn-cantidad:hover {
-        background: #f8f9fa;
+    .datos-factura-simplificado .form-control:focus {
         border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
     }
 
-    .badge-cantidad {
-        min-width: 40px;
-        font-size: 0.9em;
-    }
-
-    /* ESTILOS PARA LA SECCIÓN DE TIPO DE DOCUMENTO DENTRO DE MÉTODOS DE PAGO */
-    .seleccion-documento {
+        .seleccion-documento {
         background: white;
         padding: 15px;
         border-radius: 8px;
@@ -667,6 +849,71 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         border-radius: 8px;
         border: 1px solid #e9ecef;
         margin-top: 15px;
+    }
+
+        #datosBoleta .col-md-6 {
+        width: 100% !important;
+    }
+
+    #datosBoleta .col-12 {
+        width: 100% !important;
+    }
+
+        .datos-cliente-card .row {
+        margin: 0;
+    }
+
+    .datos-cliente-card .col-md-6,
+    .datos-cliente-card .col-12 {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+        .tipo-ruc-indicator {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8em;
+        font-weight: 600;
+        margin-left: 10px;
+    }
+
+    .tipo-empresa {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .tipo-persona {
+        background: #e8f4fd;
+        color: #004085;
+        border: 1px solid #b8daff;
+    }
+
+    .info-adicional {
+        font-size: 0.85em;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+
+    .campo-opcional {
+        color: #6c757d;
+        font-weight: normal;
+    }
+    .fuente-consulta {
+        font-size: 0.75em;
+        color: #6c757d;
+        font-style: italic;
+        margin-top: 5px;
+    }
+
+    .sin-direccion {
+        color: #dc3545;
+        font-weight: 500;
+    }
+
+    .con-direccion {
+        color: #28a745;
+        font-weight: 500;
     }
   </style>
 </head>
@@ -684,7 +931,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                 </div>
 
                 <div class="nav flex-column mt-3">
-                    <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="dashboard.html" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
                     <a href="nuevaventa.php" class="nav-link active"><ul><i class="fas fa-cash-register"></i>Nueva Venta</ul></a>
                     <a href="registrodevolucion.php" class="nav-link"><ul><i class="fas fa-undo-alt"></i>Registrar Devolución</ul></a>
                     <a href="boletafactura.php" class="nav-link"><ul><i class="fas fa-receipt"></i>Boletas/Facturas</ul></a>
@@ -925,33 +1172,66 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                                 <!-- DATOS DEL CLIENTE INTEGRADOS -->
                                 <div class="datos-cliente-card" id="datosClienteCard">
                                     <h5><i class="fas fa-user"></i> Datos del Cliente</h5>
-                                    <div class="row g-3 mt-2">
-                                        <!-- DATOS PARA BOLETA (VISIBLE POR DEFECTO) -->
-                                        <div class="col-md-6" id="datosBoleta">
-                                            <label for="inputDNI" class="form-label">DNI (Opcional para boleta)</label>
-                                            <input type="text" name="dni_cliente" id="inputDNI" class="form-control" placeholder="8 dígitos" maxlength="8">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="inputNombre" class="form-label">Nombre Completo *</label>
-                                            <input type="text" name="nombre_cliente" id="inputNombre" class="form-control" placeholder="Nombre del cliente" required>
-                                        </div>
+                                    
+                                    <!-- DATOS PARA BOLETA (VISIBLE POR DEFECTO) -->
+                                    <div class="row g-3 mt-2" id="datosBoleta">
                                         <div class="col-12">
-                                            <label for="inputEmail" class="form-label">Email (Opcional - para envío de comprobante)</label>
+                                            <label for="inputEmail" class="form-label">Email</label>
                                             <input type="email" name="email_cliente" id="inputEmail" class="form-control" placeholder="correo@ejemplo.com">
                                         </div>
-                                        
-                                        <!-- DATOS ADICIONALES PARA FACTURA (OCULTOS INICIALMENTE) -->
-                                        <div class="col-md-6" id="datosFacturaRUC" style="display: none;">
-                                            <label for="inputRUC" class="form-label">RUC *</label>
-                                            <input type="text" name="ruc_cliente" id="inputRUC" class="form-control" placeholder="11 dígitos" maxlength="11">
+                                        <div class="col-12">
+                                            <label for="inputDNI" class="form-label">DNI</label>
+                                            <input type="text" name="dni_cliente" id="inputDNI" class="form-control" placeholder="8 dígitos" maxlength="8">
                                         </div>
-                                        <div class="col-md-6" id="datosFacturaRazon" style="display: none;">
-                                            <label for="inputRazonSocial" class="form-label">Razón Social *</label>
-                                            <input type="text" name="razon_social_cliente" id="inputRazonSocial" class="form-control" placeholder="Razón social del cliente">
+                                        <div class="col-12">
+                                            <label for="inputNombre" class="form-label">Nombre Completo</label>
+                                            <input type="text" name="nombre_cliente" id="inputNombre" class="form-control" placeholder="Nombre del cliente" required>
                                         </div>
-                                        <div class="col-12" id="datosFacturaDireccion" style="display: none;">
-                                            <label for="inputDireccion" class="form-label">Dirección Fiscal *</label>
-                                            <input type="text" name="direccion_cliente" id="inputDireccion" class="form-control" placeholder="Dirección completa del cliente">
+                                    </div>
+                                    
+                                    <!-- DATOS ADICIONALES PARA FACTURA - VERSIÓN SIMPLIFICADA -->
+                                    <div class="datos-factura-simplificado" id="datosFacturaSection" style="display: none;">
+                                        <!-- SECCIÓN DE CONSULTA RUC MEJORADA -->
+                                        <div class="consulta-ruc-section">
+                                            <h6><i class="fas fa-search"></i> Consultar RUC en SUNAT</h6>
+                                            <div class="info-adicional">
+                                                <small class="text-muted">Consulta automática de datos del contribuyente</small>
+                                            </div>
+                                            <div class="consulta-ruc-input">
+                                                <div class="flex-grow-1">
+                                                    <label class="form-label">Ingrese RUC (11 dígitos)</label>
+                                                    <input type="text" id="inputRucConsulta" class="form-control" placeholder="20131312955" maxlength="11">
+                                                </div>
+                                                <button type="button" id="btnConsultarRUC" class="btn btn-primary">
+                                                    <i class="fas fa-search"></i> Consultar
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="ruc-loading" id="rucLoading">
+                                                <i class="fas fa-spinner fa-spin"></i> Consultando SUNAT...
+                                            </div>
+                                            
+                                            <div class="ruc-result" id="rucResult"></div>
+                                        </div>
+
+                                        <!-- CAMPOS SIMPLIFICADOS PARA FACTURA -->
+                                        <div class="row g-3 mt-2">
+                                            <div class="col-12">
+                                                <label for="inputEmailFactura" class="form-label">Email</label>
+                                                <input type="email" name="email_cliente_factura" id="inputEmailFactura" class="form-control" placeholder="correo@ejemplo.com">
+                                            </div>
+                                            <div class="col-12">
+                                                <label for="inputRUC" class="form-label">RUC</label>
+                                                <input type="text" name="ruc_cliente" id="inputRUC" class="form-control" placeholder="11 dígitos" maxlength="11" required>
+                                            </div>
+                                            <div class="col-12">
+                                                <label for="inputRazonSocial" class="form-label">Razón Social</label>
+                                                <input type="text" name="razon_social_cliente" id="inputRazonSocial" class="form-control" placeholder="Razón social del cliente" required>
+                                            </div>
+                                            <div class="col-12">
+                                                <label for="inputDireccion" class="form-label">Dirección Fiscal <span class="campo-opcional">(Opcional)</span></label>
+                                                <input type="text" name="direccion_cliente" id="inputDireccion" class="form-control" placeholder="Dirección completa del cliente">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1013,6 +1293,17 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
             });
         });
 
+        // Configurar consulta RUC
+        document.getElementById('btnConsultarRUC').addEventListener('click', consultarRUC);
+
+        // Permitir consulta RUC con Enter
+        document.getElementById('inputRucConsulta').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                consultarRUC();
+            }
+        });
+
         actualizarInterfazPorDocumento();
         
         // Configurar filtro de productos
@@ -1053,42 +1344,145 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         }
     });
 
-    // ACTUALIZAR LA FUNCIÓN actualizarInterfazPorDocumento
+    // FUNCIÓN MEJORADA PARA CONSULTA RUC
+    function consultarRUC() {
+        const ruc = document.getElementById('inputRucConsulta').value.trim();
+        const btnConsultar = document.getElementById('btnConsultarRUC');
+        const loading = document.getElementById('rucLoading');
+        const result = document.getElementById('rucResult');
+        
+        if(ruc.length !== 11) {
+            showRucResult('error', 'El RUC debe tener exactamente 11 dígitos');
+            return;
+        }
+        
+        // Validar que sean solo números
+        if(!/^\d+$/.test(ruc)) {
+            showRucResult('error', 'El RUC debe contener solo números');
+            return;
+        }
+        
+        // Mostrar loading
+        btnConsultar.disabled = true;
+        loading.style.display = 'block';
+        result.style.display = 'none';
+        
+        // Realizar consulta AJAX
+        const formData = new FormData();
+        formData.append('consultar_ruc', 'true');
+        formData.append('ruc_consulta', ruc);
+        
+        fetch('', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                // Autocompletar campos
+                document.getElementById('inputRUC').value = ruc;
+                document.getElementById('inputRazonSocial').value = data.razon_social_mostrar;
+                
+                // MEJORA: Manejar dirección - si está vacía, dejar el campo vacío
+                document.getElementById('inputDireccion').value = data.direccion;
+                
+                // Mostrar resultado con el formato mejorado
+                const tipoIndicator = data.tipo === 'empresa' ? 
+                    '<span class="tipo-ruc-indicator tipo-empresa">EMPRESA</span>' : 
+                    '<span class="tipo-ruc-indicator tipo-persona">PERSONA NATURAL</span>';
+                
+                // MEJORA: Formato mejorado para dirección
+                const direccionInfo = data.direccion ? 
+                    `<span class="con-direccion">${data.direccion}</span>` : 
+                    '<span class="campo-vacio">No especificada</span>';
+                
+                // MEJORA: Lógica mejorada para Nombre Comercial - solo mostrar si existe
+                let nombreComercialHTML = '';
+                if (data.nombre_comercial && data.nombre_comercial.trim() !== '') {
+                    nombreComercialHTML = `<small>Nombre Comercial: ${data.nombre_comercial}</small><br>`;
+                }
+                
+                // Construir el mensaje de resultado
+                let resultadoHTML = `
+                    ${data.tipo_texto} ${data.razon_social_mostrar} ${tipoIndicator}<br>
+                    ${nombreComercialHTML}
+                    <small>Dirección: ${direccionInfo}</small><br>
+                    <small>Estado: ${data.estado} | Condición: ${data.condicion}</small>
+                `;
+                
+                // MEJORA: Agregar alerta de estado si no está ACTIVO
+                if (data.estado_alert) {
+                    resultadoHTML += `<div class="estado-alerta mt-2">${data.estado_alert}</div>`;
+                }
+                
+                showRucResult('success', resultadoHTML);
+            } else {
+                showRucResult('error', data.error || 'RUC no encontrado');
+            }
+        })
+        .catch(error => {
+            showRucResult('error', 'Error en la consulta. Verifique su conexión a internet.');
+        })
+        .finally(() => {
+            btnConsultar.disabled = false;
+            loading.style.display = 'none';
+        });
+    }
+
+    function showRucResult(type, message) {
+        const result = document.getElementById('rucResult');
+        result.innerHTML = message;
+        result.className = `ruc-result ${type === 'success' ? 'ruc-success' : 'ruc-error'}`;
+        result.style.display = 'block';
+        
+        // Auto-ocultar mensajes de éxito después de 10 segundos (más tiempo para leer la alerta)
+        if(type === 'success') {
+            setTimeout(() => {
+                result.style.display = 'none';
+            }, 50000);
+        }
+    }
+
     function actualizarInterfazPorDocumento() {
         const btnFinalizar = document.getElementById('btnFinalizar');
         const datosBoleta = document.getElementById('datosBoleta');
-        const datosFacturaRUC = document.getElementById('datosFacturaRUC');
-        const datosFacturaRazon = document.getElementById('datosFacturaRazon');
-        const datosFacturaDireccion = document.getElementById('datosFacturaDireccion');
+        const datosFacturaSection = document.getElementById('datosFacturaSection');
         
         if (tipoDocumentoSeleccionado === 'factura') {
             btnFinalizar.innerHTML = '<i class="fas fa-file-invoice-dollar"></i> Generar Factura';
             datosBoleta.style.display = 'none';
-            datosFacturaRUC.style.display = 'block';
-            datosFacturaRazon.style.display = 'block';
-            datosFacturaDireccion.style.display = 'block';
+            datosFacturaSection.style.display = 'block';
             
-            // Hacer requeridos los campos de factura
+            // Hacer requeridos solo RUC y Razón Social
             document.getElementById('inputRUC').required = true;
             document.getElementById('inputRazonSocial').required = true;
-            document.getElementById('inputDireccion').required = true;
+            document.getElementById('inputDireccion').required = false; // Dirección ahora opcional
             document.getElementById('inputNombre').required = false;
+            
+            // Limpiar campos de boleta
+            document.getElementById('inputDNI').value = '';
+            document.getElementById('inputNombre').value = '';
         } else {
             btnFinalizar.innerHTML = '<i class="fas fa-check-circle"></i> Finalizar Venta';
             datosBoleta.style.display = 'block';
-            datosFacturaRUC.style.display = 'none';
-            datosFacturaRazon.style.display = 'none';
-            datosFacturaDireccion.style.display = 'none';
+            datosFacturaSection.style.display = 'none';
             
             // Quitar requerido de campos de factura
             document.getElementById('inputRUC').required = false;
             document.getElementById('inputRazonSocial').required = false;
             document.getElementById('inputDireccion').required = false;
             document.getElementById('inputNombre').required = true;
+            
+            // Limpiar campos de factura
+            document.getElementById('inputRUC').value = '';
+            document.getElementById('inputRazonSocial').value = '';
+            document.getElementById('inputDireccion').value = '';
+            document.getElementById('inputRucConsulta').value = '';
+            document.getElementById('rucResult').style.display = 'none';
         }
     }
 
-    // ACTUALIZAR LA VALIDACIÓN DEL FORMULARIO
+    // ACTUALIZAR LA VALIDACIÓN DEL FORMULARIO - DIRECCIÓN OPCIONAL
     document.getElementById('formVenta').addEventListener('submit', function(e) {
         if (productosVenta.length === 0) {
             e.preventDefault();
@@ -1100,7 +1494,6 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         if (tipoDocumentoSeleccionado === 'factura') {
             const ruc = document.getElementById('inputRUC').value;
             const razonSocial = document.getElementById('inputRazonSocial').value;
-            const direccion = document.getElementById('inputDireccion').value;
             
             if (!ruc || ruc.length !== 11) {
                 e.preventDefault();
@@ -1116,12 +1509,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                 return;
             }
             
-            if (!direccion.trim()) {
-                e.preventDefault();
-                alert('❌ Para factura debe ingresar la dirección del cliente');
-                document.getElementById('inputDireccion').focus();
-                return;
-            }
+            // LA DIRECCIÓN AHORA ES OPCIONAL - NO SE VALIDA
         } else {
             // Para boleta, validar DNI si se proporciona
             const dni = document.getElementById('inputDNI').value;
@@ -1165,11 +1553,12 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         btnFinalizar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
     });
 
-    // Función para agregar productos
+    // Función para agregar productos - SIN ALERTA, CON CANTIDAD DIRECTA 1
     function agregarProducto(codigo, nombre, precio, stock) {
         const productoExistente = productosVenta.find(p => p.codigo === codigo);
         
         if (productoExistente) {
+            // Si el producto ya existe, aumentar la cantidad en 1
             if (productoExistente.cantidad < stock) {
                 productoExistente.cantidad++;
                 productoExistente.total = productoExistente.cantidad * precio;
@@ -1178,6 +1567,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                 return;
             }
         } else {
+            // Si es nuevo producto, agregar con cantidad 1
             if (stock <= 0) {
                 alert('❌ Producto sin stock disponible');
                 return;
@@ -1200,7 +1590,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         agregarProducto(codigo, nombre, precio, stock);
     }
 
-    // Función para actualizar la venta
+    // Función para actualizar la venta CON INPUTS DE CANTIDAD AUTOMÁTICOS
     function actualizarVenta() {
         const listaProductos = document.getElementById('listaProductosVenta');
         
@@ -1226,15 +1616,12 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                             <div class="producto-precio">S/ ${producto.precio.toFixed(2)} c/u</div>
                         </div>
                         <div class="producto-controls">
-                            <div class="cantidad-controls">
-                                <button type="button" class="btn-cantidad" onclick="modificarCantidad(${index}, -1)">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <span class="badge bg-primary badge-cantidad mx-2">${producto.cantidad}</span>
-                                <button type="button" class="btn-cantidad" onclick="modificarCantidad(${index}, 1)">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
+                            <input type="number" 
+                                   class="cantidad-input" 
+                                   value="${producto.cantidad}" 
+                                   min="1" 
+                                   max="${producto.stock}"
+                                   onchange="actualizarCantidad(${index}, this.value)">
                             <div class="producto-total text-success">
                                 <strong>S/ ${producto.total.toFixed(2)}</strong>
                             </div>
@@ -1250,10 +1637,8 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         }
         
         // Calcular totales (IGV incluido en el precio)
-        // El precio ya incluye IGV, por lo que el subtotal es la suma de precios * cantidad
-        // El IGV se calcula como el 18% del subtotal
         igv = parseFloat((subtotal * 0.18).toFixed(2));
-        total = parseFloat((subtotal).toFixed(2)); // El total es igual al subtotal porque el IGV ya está incluido
+        total = parseFloat((subtotal).toFixed(2));
         
         document.getElementById('subtotal').textContent = 'S/ ' + (subtotal - igv).toFixed(2);
         document.getElementById('igv').textContent = 'S/ ' + igv.toFixed(2);
@@ -1273,21 +1658,25 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         }
     }
 
-    function modificarCantidad(index, cambio) {
+    // FUNCIÓN PARA ACTUALIZAR CANTIDAD AUTOMÁTICAMENTE
+    function actualizarCantidad(index, nuevaCantidad) {
+        const cantidadNum = parseInt(nuevaCantidad);
         const producto = productosVenta[index];
-        const nuevaCantidad = producto.cantidad + cambio;
         
-        if (nuevaCantidad <= 0) {
-            eliminarProducto(index);
+        if (isNaN(cantidadNum) || cantidadNum <= 0) {
+            // Restaurar valor anterior si no es válido
+            document.querySelectorAll('.cantidad-input')[index].value = producto.cantidad;
             return;
         }
         
-        if (nuevaCantidad > producto.stock) {
+        if (cantidadNum > producto.stock) {
             alert(`❌ No hay suficiente stock. Stock disponible: ${producto.stock}`);
+            document.querySelectorAll('.cantidad-input')[index].value = producto.cantidad;
             return;
         }
         
-        producto.cantidad = nuevaCantidad;
+        // Actualizar cantidad y recalcular total
+        producto.cantidad = cantidadNum;
         producto.total = producto.cantidad * producto.precio;
         actualizarVenta();
     }

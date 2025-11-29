@@ -1,3 +1,303 @@
+<?php
+date_default_timezone_set('America/Lima');
+include('../login/ingresarlogin.php');
+
+$conexion = pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
+if(!$conexion){
+    die("Error de conexión a la base de datos");
+}
+
+$cod_usuario = $_SESSION['cod_usuario'] ?? 'USU001';
+
+// Inicializar variables con valores por defecto
+$precios_productos = array();
+$unidades_por_caja = array();
+$productos_por_proveedor = array();
+
+// Obtener parámetro de filtro si existe
+$filtro = $_GET['filtro'] ?? 'todos';
+$busqueda = $_GET['busqueda'] ?? '';
+$tab_activa = $_GET['tab'] ?? 'nuevaEntrada';
+
+try {
+    // Obtener datos para los select
+    $result1 = pg_query($conexion, "SELECT cod_proveedor, razon_social FROM proveedor");
+    if(!$result1){
+        error_log("Error al cargar proveedores: " . pg_last_error($conexion));
+    }
+
+    // OBTENER CÓDIGOS DE TABLAS DE REFERENCIA
+    // Métodos de pago
+    $result_mp = pg_query($conexion, "SELECT cod_metodopago FROM metodopago LIMIT 1");
+    if($result_mp && pg_num_rows($result_mp) > 0) {
+        $row = pg_fetch_assoc($result_mp);
+        $cod_metodopago = $row['cod_metodopago'];
+    } else {
+        $cod_metodopago = 'MP001';
+    }
+
+    // Tipos de reporte
+    $result_tr = pg_query($conexion, "SELECT cod_tiporeporte FROM tiporeporte LIMIT 1");
+    if($result_tr && pg_num_rows($result_tr) > 0) {
+        $row = pg_fetch_assoc($result_tr);
+        $cod_tiporeporte = $row['cod_tiporeporte'];
+    } else {
+        $cod_tiporeporte = 'REP001';
+    }
+
+    // Tipos de movimiento
+    $result_tm = pg_query($conexion, "SELECT cod_tipomovimiento FROM tipomovimiento LIMIT 1");
+    if($result_tm && pg_num_rows($result_tm) > 0) {
+        $row = pg_fetch_assoc($result_tm);
+        $cod_tipomovimiento = $row['cod_tipomovimiento'];
+    } else {
+        $cod_tipomovimiento = 'MOV001';
+        $insert_tm = pg_query($conexion, "INSERT INTO tipomovimiento (cod_tipomovimiento, nombre) VALUES ('MOV001', 'Entrada')");
+    }
+
+    // Tipos de acción
+    $result_ta = pg_query($conexion, "SELECT cod_tipoaccion FROM tipoaccion LIMIT 1");
+    if($result_ta && pg_num_rows($result_ta) > 0) {
+        $row = pg_fetch_assoc($result_ta);
+        $cod_tipoaccion = $row['cod_tipoaccion'];
+    } else {
+        $cod_tipoaccion = 'ACC001';
+        $insert_ta = pg_query($conexion, "INSERT INTO tipoaccion (cod_tipoaccion, nombre) VALUES ('ACC001', 'Registro')");
+    }
+
+    // Obtener productos con precios y proveedores
+    $result3 = pg_query($conexion, "SELECT p.cod_producto, p.nombre, p.precio_caja, p.unidades_por_caja, p.cod_proveedor, pr.razon_social 
+                                  FROM producto p 
+                                  LEFT JOIN proveedor pr ON p.cod_proveedor = pr.cod_proveedor");
+    if(!$result3){
+        error_log("Error al cargar productos: " . pg_last_error($conexion));
+    } else {
+        pg_result_seek($result3, 0);
+        while($row = pg_fetch_assoc($result3)){
+            $precios_productos[$row['cod_producto']] = $row['precio_caja'];
+            $unidades_por_caja[$row['cod_producto']] = $row['unidades_por_caja'];
+            
+            // Organizar productos por proveedor
+            $cod_proveedor = $row['cod_proveedor'];
+            if (!isset($productos_por_proveedor[$cod_proveedor])) {
+                $productos_por_proveedor[$cod_proveedor] = array();
+            }
+            $productos_por_proveedor[$cod_proveedor][] = array(
+                'cod_producto' => $row['cod_producto'],
+                'nombre' => $row['nombre'],
+                'precio_caja' => $row['precio_caja'],
+                'unidades_por_caja' => $row['unidades_por_caja']
+            );
+        }
+    }
+
+    // CONSULTA CORREGIDA para historial - SOLO COMPRAS CON PRODUCTOS
+    $query_historial = "SELECT 
+                        c.cod_compra,
+                        c.fecha_compra AS fecha,
+                        pr.razon_social AS proveedor_nombre,
+                        u.usuario AS usuario_registro,
+                        COUNT(dc.cod_detallecompra) AS total_productos,
+                        COALESCE(SUM(dc.total), 0) AS total_compra,
+                        mp.nombre AS metodo_pago
+                    FROM compra c
+                    JOIN proveedor pr ON c.cod_proveedor = pr.cod_proveedor
+                    JOIN usuario u ON c.cod_usuario = u.cod_usuario
+                    JOIN metodopago mp ON c.cod_metodopago = mp.cod_metodopago
+                    INNER JOIN detallecompra dc ON c.cod_compra = dc.cod_compra  -- INNER JOIN para solo compras con detalles
+                    WHERE dc.cantidad_cajas > 0  -- Solo detalles con cantidad mayor a 0
+                    AND dc.cod_producto IS NOT NULL  -- Solo detalles con producto válido
+                    AND dc.total > 0  -- Solo detalles con total mayor a 0
+                    ";
+
+    // Aplicar filtros
+    if ($filtro === 'hoy') {
+        $query_historial .= " AND DATE(c.fecha_compra) = CURRENT_DATE";
+    } elseif ($filtro === 'semana') {
+        $query_historial .= " AND c.fecha_compra >= DATE_TRUNC('week', CURRENT_DATE)";
+    } elseif ($filtro === 'mes') {
+        $query_historial .= " AND c.fecha_compra >= DATE_TRUNC('month', CURRENT_DATE)";
+    }
+
+    // Aplicar búsqueda
+    if (!empty($busqueda)) {
+        $busqueda_like = pg_escape_string($busqueda);
+        $query_historial .= " AND (c.cod_compra ILIKE '%$busqueda_like%' 
+                                 OR pr.razon_social ILIKE '%$busqueda_like%'
+                                 OR u.usuario ILIKE '%$busqueda_like%')";
+    }
+
+    $query_historial .= " GROUP BY c.cod_compra, c.fecha_compra, pr.razon_social, u.usuario, mp.nombre
+                         HAVING COUNT(dc.cod_detallecompra) > 0  -- Solo grupos con al menos un producto
+                         AND COALESCE(SUM(dc.total), 0) > 0  -- Solo grupos con total mayor a 0
+                         ORDER BY c.fecha_compra DESC, c.cod_compra DESC";
+
+    error_log("Consulta historial: " . $query_historial); // Para debugging
+    
+    $result4 = pg_query($conexion, $query_historial);
+    
+    if(!$result4){
+        error_log("Error al cargar historial: " . pg_last_error($conexion));
+    }
+
+} catch (Exception $e) {
+    error_log("Error en consultas iniciales: " . $e->getMessage());
+}
+
+// FUNCIÓN PARA GENERAR CÓDIGOS SECUENCIALES SIMPLIFICADOS - IGNORANDO CÓDIGOS LARGOS
+function generarCodigoSecuencial($conexion, $prefijo, $tabla, $campo) {
+    // Buscar el máximo número actual en la base de datos, pero solo códigos cortos
+    $query = "SELECT MAX(CAST(SUBSTRING($campo FROM " . (strlen($prefijo) + 1) . ") AS INTEGER)) as max_num 
+              FROM $tabla 
+              WHERE $campo ~ '^" . $prefijo . "[0-9]+$'
+              AND LENGTH($campo) <= " . (strlen($prefijo) + 3); // Solo códigos de máximo 3 dígitos después del prefijo
+    
+    $result = pg_query($conexion, $query);
+    $max_num = 0;
+    
+    if($result && pg_num_rows($result) > 0) {
+        $row = pg_fetch_assoc($result);
+        $max_num = $row ? intval($row['max_num']) : 0;
+    }
+    
+    $nuevo_numero = $max_num + 1;
+    
+    // Formatear con ceros a la izquierda según el número
+    if($nuevo_numero < 10) {
+        return $prefijo . '0' . $nuevo_numero;
+    } else {
+        return $prefijo . $nuevo_numero;
+    }
+}
+
+// Procesar el formulario cuando se envía
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        // Iniciar transacción
+        pg_query($conexion, "BEGIN");
+        
+        $proveedor = $_POST['proveedor'] ?? '';
+        $fecha_entrada = date('Y-m-d H:i:s');
+        $numero_factura = $_POST['numero_factura'] ?? '';
+        $productos = $_POST['productos'] ?? [];
+        $cantidades = $_POST['cantidades'] ?? [];
+        $precios_caja = $_POST['precios_caja'] ?? [];
+        
+        // Validar datos requeridos
+        if(empty($proveedor) || empty($fecha_entrada)) {
+            throw new Exception("Proveedor y fecha son obligatorios");
+        }
+
+        if(empty($productos) || count(array_filter($productos)) == 0) {
+            throw new Exception("Debe agregar al menos un producto");
+        }
+
+        // 1. GENERAR CÓDIGO DE COMPRA SECUENCIAL
+        $cod_compra = generarCodigoSecuencial($conexion, 'COM', 'compra', 'cod_compra');
+        
+        // 2. INSERTAR EN COMPRA
+        $query_compra = "INSERT INTO compra (cod_compra, cod_usuario, cod_proveedor, cod_metodopago, cod_tiporeporte, fecha_compra) 
+                        VALUES ('$cod_compra', '$cod_usuario', '$proveedor', '$cod_metodopago', '$cod_tiporeporte', '$fecha_entrada')";
+        
+        if(!pg_query($conexion, $query_compra)) {
+            throw new Exception("Error al insertar compra: " . pg_last_error($conexion));
+        }
+
+        // 3. PROCESAR CADA PRODUCTO
+        foreach($productos as $index => $cod_producto) {
+            if(!empty($cod_producto)) {
+                $cantidad_cajas = intval($cantidades[$index]);
+                $precio_por_caja = floatval($precios_caja[$index]);
+                
+                // CALCULAR PRECIO UNITARIO Y TOTAL CORREGIDOS
+                $unidades_por_caja_producto = $unidades_por_caja[$cod_producto];
+                $precio_unitario = $precio_por_caja / $unidades_por_caja_producto;
+                
+                // CALCULO CORREGIDO: Total = cantidad_cajas * precio_por_caja
+                $total = $cantidad_cajas * $precio_por_caja;
+                $cantidad_unidades = $cantidad_cajas * $unidades_por_caja_producto;
+                
+                // Validar datos del producto
+                if($cantidad_cajas <= 0) {
+                    throw new Exception("La cantidad debe ser mayor a 0");
+                }
+                if($precio_por_caja < 0) {
+                    throw new Exception("El precio por caja no puede ser negativo");
+                }
+
+                // Generar códigos secuenciales para cada tabla
+                $cod_detallecompra = generarCodigoSecuencial($conexion, 'DET', 'detallecompra', 'cod_detallecompra');
+                $cod_inventario = generarCodigoSecuencial($conexion, 'INV', 'registroinventario', 'cod_inventario');
+                $cod_movimiento = generarCodigoSecuencial($conexion, 'MOV', 'movimiento', 'cod_movimiento');
+                $cod_historial = generarCodigoSecuencial($conexion, 'HIS', 'historialproductos', 'cod_historialproductos');
+                
+                // 4. Insertar en detallecompra
+                $query_detalle = "INSERT INTO detallecompra (cod_detallecompra, cod_compra, cod_producto, cantidad_cajas, cantidad_unidades, total) 
+                                 VALUES ('$cod_detallecompra', '$cod_compra', '$cod_producto', $cantidad_cajas, $cantidad_unidades, $total)";
+                
+                if(!pg_query($conexion, $query_detalle)) {
+                    throw new Exception("Error al insertar detalle de compra: " . pg_last_error($conexion));
+                }
+                
+                // 5. Actualizar stock en producto
+                $unidades_agregadas = $cantidad_cajas * $unidades_por_caja[$cod_producto];
+                $query_update_stock = "UPDATE producto SET stock = stock + $unidades_agregadas WHERE cod_producto = '$cod_producto'";
+                
+                if(!pg_query($conexion, $query_update_stock)) {
+                    throw new Exception("Error al actualizar stock: " . pg_last_error($conexion));
+                }
+
+                // 6. Insertar en registroinventario
+                $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total) 
+                                   VALUES ('$cod_inventario', '$cod_usuario', '$fecha_entrada', '$cod_producto', '$cod_tipomovimiento', $cantidad_unidades, $precio_unitario, $total)";
+                
+                if(!pg_query($conexion, $query_inventario)) {
+                    throw new Exception("Error al insertar en registro inventario: " . pg_last_error($conexion));
+                }
+                
+                // 7. Insertar en movimiento
+                $observacion = "Entrada de proveedor - Compra: $cod_compra - $cantidad_cajas cajas ($unidades_agregadas unidades)";
+                $query_movimiento = "INSERT INTO movimiento (cod_movimiento, cod_producto, cod_tipomovimiento, fecha_movimiento, cod_usuario, observacion) 
+                                   VALUES ('$cod_movimiento', '$cod_producto', '$cod_tipomovimiento', '$fecha_entrada', '$cod_usuario', '$observacion')";
+                
+                if(!pg_query($conexion, $query_movimiento)) {
+                    throw new Exception("Error al insertar movimiento: " . pg_last_error($conexion));
+                }
+                
+                // 8. Insertar en historialproductos SOLO SI EXISTE EL TIPO DE ACCIÓN
+                if (!empty($cod_tipoaccion)) {
+                    $observacion_historial = "Entrada de $cantidad_cajas cajas ($unidades_agregadas unidades) - Compra: $cod_compra - Total: S/ $total";
+                    $query_historial = "INSERT INTO historialproductos (cod_historialproductos, cod_usuario, cod_producto, cod_tipoaccion, observacion) 
+                                      VALUES ('$cod_historial', '$cod_usuario', '$cod_producto', '$cod_tipoaccion', '$observacion_historial')";
+                    
+                    if(!pg_query($conexion, $query_historial)) {
+                        error_log("Error al insertar historial (continuando sin historial): " . pg_last_error($conexion));
+                    }
+                }
+            }
+        }
+        
+        // Confirmar transacción
+        pg_query($conexion, "COMMIT");
+        
+        echo "<script>
+            alert('✅ Entrada registrada correctamente. Stock actualizado.\\\\n\\\\n📋 Código de compra: $cod_compra');
+            window.location.href = 'entradaproveedor.php?tab=nuevaEntrada';
+        </script>";
+        
+    } catch (Exception $e) {
+        // Revertir transacción en caso de error
+        pg_query($conexion, "ROLLBACK");
+        echo "<script>alert('❌ Error: " . $e->getMessage() . "');</script>";
+    }
+}
+
+// Obtener datos del usuario para la interfaz
+$usuarioencargado = $_SESSION['nombreusuarioencargado'] ?? '';
+$apellidoencargado = $_SESSION['apellidousuarioencargado'] ?? '';
+$inicialNombre = substr($usuarioencargado, 0, 1);
+$inicialApellido = substr($apellidoencargado, 0, 1);
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -10,318 +310,6 @@
     <link rel="stylesheet" href="css/almacen-boton/boton.css">
 </head>
 <body>
-    <?php
-        $conexion = pg_connect("host=localhost dbname=sistemainventario user=postgres password=root");
-        if(!$conexion){
-            echo "Un error de conexión ocurrió.";
-            exit;
-        }
-
-        session_start();
-        $usuarioencargado=$_SESSION['nombreusuarioencargado'];
-        $apellidoencargado=$_SESSION['apellidousuarioencargado'];
-
-        $inicialNombre = substr($usuarioencargado, 0, 1);
-        $inicialApellido=substr($apellidoencargado,0,1);
-
-        if (!isset($_SESSION['nombreusuarioencargado'])) {
-            header("Location: ../login.php");
-            exit;
-        }
-
-        // Inicializar variables con valores por defecto
-        $precios_productos = array();
-        $unidades_por_caja = array();
-
-        // Obtener parámetro de filtro si existe
-        $filtro = $_GET['filtro'] ?? 'todos';
-        $busqueda = $_GET['busqueda'] ?? '';
-        $tab_activa = $_GET['tab'] ?? 'nuevaEntrada';
-
-        try {
-            // CORRECCIÓN: Obtener datos para los select - cambiar 'nombre' por 'razon_social'
-            $result1 = pg_query($conexion, "SELECT cod_proveedor, razon_social FROM proveedor");
-            if(!$result1){
-                error_log("Error al cargar proveedores: " . pg_last_error($conexion));
-            }
-
-            $result2 = pg_query($conexion, "SELECT cod_tipodocumento, nombre FROM tipodocumento");
-            if(!$result2){
-                error_log("Error al cargar tipos de documento: " . pg_last_error($conexion));
-            }
-
-            // CORRECCIÓN: Obtener productos CON PRECIO DE CAJA (no precio_costo)
-            $result3 = pg_query($conexion, "SELECT cod_producto, nombre, precio_caja, unidades_por_caja FROM producto");
-            if(!$result3){
-                error_log("Error al cargar productos: " . pg_last_error($conexion));
-            } else {
-                // Crear array con precios de productos (precio por caja)
-                pg_result_seek($result3, 0);
-                while($row = pg_fetch_assoc($result3)){
-                    $precios_productos[$row['cod_producto']] = $row['precio_caja'];
-                    $unidades_por_caja[$row['cod_producto']] = $row['unidades_por_caja'];
-                }
-            }
-
-            // OBTENER CÓDIGOS DE TABLAS DE REFERENCIA
-            // Métodos de pago
-            $result_mp = pg_query($conexion, "SELECT cod_metodopago FROM metodopago LIMIT 1");
-            if($result_mp && pg_num_rows($result_mp) > 0) {
-                $row = pg_fetch_assoc($result_mp);
-                $cod_metodopago = $row['cod_metodopago'];
-            } else {
-                $cod_metodopago = 'MP001'; // Valor por defecto más común
-            }
-
-            // Tipos de reporte
-            $result_tr = pg_query($conexion, "SELECT cod_tiporeporte FROM tiporeporte LIMIT 1");
-            if($result_tr && pg_num_rows($result_tr) > 0) {
-                $row = pg_fetch_assoc($result_tr);
-                $cod_tiporeporte = $row['cod_tiporeporte'];
-            } else {
-                $cod_tiporeporte = 'REP001'; // Valor por defecto más común
-            }
-
-            // Tipos de movimiento - CORRECCIÓN: Buscar uno que exista realmente
-            $result_tm = pg_query($conexion, "SELECT cod_tipomovimiento FROM tipomovimiento LIMIT 1");
-            if($result_tm && pg_num_rows($result_tm) > 0) {
-                $row = pg_fetch_assoc($result_tm);
-                $cod_tipomovimiento = $row['cod_tipomovimiento'];
-            } else {
-                // Si no hay registros, intentar insertar uno básico
-                $cod_tipomovimiento = 'MOV001';
-                $insert_tm = pg_query($conexion, "INSERT INTO tipomovimiento (cod_tipomovimiento, nombre) VALUES ('MOV001', 'Entrada')");
-            }
-
-            // CORRECCIÓN: Tipos de acción - Buscar uno que exista realmente
-            $result_ta = pg_query($conexion, "SELECT cod_tipoaccion FROM tipoaccion LIMIT 1");
-            if($result_ta && pg_num_rows($result_ta) > 0) {
-                $row = pg_fetch_assoc($result_ta);
-                $cod_tipoaccion = $row['cod_tipoaccion'];
-            } else {
-                // Si no hay registros, intentar insertar uno básico
-                $cod_tipoaccion = 'ACC001';
-                $insert_ta = pg_query($conexion, "INSERT INTO tipoaccion (cod_tipoaccion, nombre) VALUES ('ACC001', 'Registro')");
-            }
-
-            // Usuario
-            $result_u = pg_query($conexion, "SELECT cod_usuario FROM usuario LIMIT 1");
-            if($result_u && pg_num_rows($result_u) > 0) {
-                $row = pg_fetch_assoc($result_u);
-                $cod_usuario = $row['cod_usuario'];
-            } else {
-                $cod_usuario = 'USER001'; // Valor por defecto más común
-            }
-
-            // CORRECCIÓN: CONSULTA para historial - COMPRAS AGRUPADAS con filtros - cambiar pr.nombre por pr.razon_social
-            $query_historial = "SELECT 
-                                c.cod_compra,
-                                c.fecha_compra AS fecha,
-                                pr.razon_social AS proveedor_nombre,
-                                u.usuario AS usuario_registro,
-                                COUNT(dc.cod_detallecompra) AS total_productos,
-                                SUM(dc.total) AS total_compra,
-                                mp.nombre AS metodo_pago
-                            FROM compra c
-                            JOIN proveedor pr ON c.cod_proveedor = pr.cod_proveedor
-                            JOIN usuario u ON c.cod_usuario = u.cod_usuario
-                            JOIN metodopago mp ON c.cod_metodopago = mp.cod_metodopago
-                            LEFT JOIN detallecompra dc ON c.cod_compra = dc.cod_compra
-                            WHERE 1=1";
-
-            // Aplicar filtros
-            if ($filtro === 'hoy') {
-                $query_historial .= " AND c.fecha_compra = CURRENT_DATE";
-            } elseif ($filtro === 'semana') {
-                $query_historial .= " AND c.fecha_compra >= DATE_TRUNC('week', CURRENT_DATE)";
-            } elseif ($filtro === 'mes') {
-                $query_historial .= " AND c.fecha_compra >= DATE_TRUNC('month', CURRENT_DATE)";
-            }
-
-            // Aplicar búsqueda
-            if (!empty($busqueda)) {
-                $busqueda_like = pg_escape_string($busqueda);
-                $query_historial .= " AND (c.cod_compra ILIKE '%$busqueda_like%' 
-                                         OR pr.razon_social ILIKE '%$busqueda_like%'
-                                         OR u.usuario ILIKE '%$busqueda_like%')";
-            }
-
-            $query_historial .= " GROUP BY c.cod_compra, c.fecha_compra, pr.razon_social, u.usuario, mp.nombre
-                                 ORDER BY c.fecha_compra DESC, c.cod_compra DESC";
-
-            $result4 = pg_query($conexion, $query_historial);
-            
-            if(!$result4){
-                error_log("Error al cargar historial: " . pg_last_error($conexion));
-            }
-
-        } catch (Exception $e) {
-            error_log("Error en consultas iniciales: " . $e->getMessage());
-        }
-
-        // Función para generar códigos únicos de exactamente 10 caracteres
-        function generarCodigo($prefijo) {
-            $numero = str_pad(mt_rand(1, 9999999), 7, '0', STR_PAD_LEFT);
-            return substr($prefijo, 0, 3) . $numero;
-        }
-
-        // Función para obtener el siguiente ID secuencial de inventario
-        function obtenerSiguienteIdInventario($conexion) {
-            // Consultar el máximo ID actual en registroinventario
-            $result = pg_query($conexion, "SELECT MAX(cod_inventario) as max_id FROM registroinventario");
-            if ($result && pg_num_rows($result) > 0) {
-                $row = pg_fetch_assoc($result);
-                $max_id = $row['max_id'];
-                
-                if ($max_id && preg_match('/INV(\d+)/', $max_id, $matches)) {
-                    // Si hay IDs existentes, incrementar el número
-                    $next_number = intval($matches[1]) + 1;
-                } else {
-                    // Si no hay IDs existentes, empezar desde 1
-                    $next_number = 1;
-                }
-                
-                return 'INV' . $next_number;
-            }
-            
-            // En caso de error, devolver INV1
-            return 'INV1';
-        }
-
-        // Procesar el formulario cuando se envía
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            try {
-                // Iniciar transacción
-                pg_query($conexion, "BEGIN");
-                
-                $proveedor = $_POST['proveedor'] ?? '';
-                $fecha_entrada = $_POST['fecha_entrada'] ?? '';
-                $numero_factura = $_POST['numero_factura'] ?? '';
-                $tipo_comprobante = $_POST['tipo_comprobante'] ?? '';
-                $productos = $_POST['productos'] ?? [];
-                $cantidades = $_POST['cantidades'] ?? [];
-                $precios_caja = $_POST['precios_caja'] ?? [];
-                
-                // Validar datos requeridos
-                if(empty($proveedor) || empty($fecha_entrada)) {
-                    throw new Exception("Proveedor y fecha son obligatorios");
-                }
-
-                if(empty($productos) || count(array_filter($productos)) == 0) {
-                    throw new Exception("Debe agregar al menos un producto");
-                }
-
-                // Obtener el siguiente ID de inventario secuencial
-                $primer_id_inventario = obtenerSiguienteIdInventario($conexion);
-                $numero_actual = intval(str_replace('INV', '', $primer_id_inventario));
-
-                // 1. GENERAR UN SOLO CÓDIGO DE COMPRA PARA TODOS LOS PRODUCTOS
-                $cod_compra = generarCodigo('COM');
-                
-                // 2. INSERTAR EN COMPRA (UNA SOLA VEZ)
-                $query_compra = "INSERT INTO compra (cod_compra, cod_usuario, cod_proveedor, cod_metodopago, cod_tiporeporte, fecha_compra) 
-                                VALUES ('$cod_compra', '$cod_usuario', '$proveedor', '$cod_metodopago', '$cod_tiporeporte', '$fecha_entrada')";
-                
-                if(!pg_query($conexion, $query_compra)) {
-                    throw new Exception("Error al insertar compra: " . pg_last_error($conexion));
-                }
-
-                // 3. PROCESAR CADA PRODUCTO (MÚLTIPLES DETALLES PARA LA MISMA COMPRA)
-                foreach($productos as $index => $cod_producto) {
-                    if(!empty($cod_producto)) {
-                        $cantidad_cajas = intval($cantidades[$index]);
-                        $precio_por_caja = floatval($precios_caja[$index]);
-                        
-                        // CALCULAR PRECIO UNITARIO Y TOTAL CORREGIDOS
-                        $unidades_por_caja_producto = $unidades_por_caja[$cod_producto];
-                        $precio_unitario = $precio_por_caja / $unidades_por_caja_producto;
-                        
-                        // CALCULO CORREGIDO: Total = cantidad_cajas * precio_por_caja
-                        $total = $cantidad_cajas * $precio_por_caja;
-                        $cantidad_unidades = $cantidad_cajas * $unidades_por_caja_producto;
-                        
-                        // Validar datos del producto
-                        if($cantidad_cajas <= 0) {
-                            throw new Exception("La cantidad debe ser mayor a 0");
-                        }
-                        if($precio_por_caja < 0) {
-                            throw new Exception("El precio por caja no puede ser negativo");
-                        }
-
-                        // Generar código único para cada detalle
-                        $cod_detallecompra = generarCodigo('DET' . $index);
-                        
-                        // USAR ID SECUENCIAL PARA INVENTARIO - incrementar para cada producto
-                        $cod_inventario = 'INV' . $numero_actual;
-                        $numero_actual++;
-                        
-                        $cod_movimiento = generarCodigo('MOV' . $index);
-                        $cod_historial = generarCodigo('HIS' . $index);
-                        
-                        // 4. Insertar en detallecompra (con el MISMO cod_compra para todos)
-                        // CORRECCIÓN: La tabla detallecompra tiene cantidad_unidades, no precio_unitario
-                        $query_detalle = "INSERT INTO detallecompra (cod_detallecompra, cod_compra, cod_producto, cantidad_cajas, cantidad_unidades, total) 
-                                         VALUES ('$cod_detallecompra', '$cod_compra', '$cod_producto', $cantidad_cajas, $cantidad_unidades, $total)";
-                        
-                        if(!pg_query($conexion, $query_detalle)) {
-                            throw new Exception("Error al insertar detalle de compra: " . pg_last_error($conexion));
-                        }
-                        
-                        // 5. Actualizar stock en producto
-                        $unidades_agregadas = $cantidad_cajas * $unidades_por_caja[$cod_producto];
-                        $query_update_stock = "UPDATE producto SET stock = stock + $unidades_agregadas WHERE cod_producto = '$cod_producto'";
-                        
-                        if(!pg_query($conexion, $query_update_stock)) {
-                            throw new Exception("Error al actualizar stock: " . pg_last_error($conexion));
-                        }
-
-                        // 6. Insertar en registroinventario
-                        $query_inventario = "INSERT INTO registroinventario (cod_inventario, cod_usuario, fecha_inventario, cod_producto, cod_tipomovimiento, cantidad, precio_unitario, total) 
-                                           VALUES ('$cod_inventario', '$cod_usuario', '$fecha_entrada', '$cod_producto', '$cod_tipomovimiento', $cantidad_unidades, $precio_unitario, $total)";
-                        
-                        if(!pg_query($conexion, $query_inventario)) {
-                            throw new Exception("Error al insertar en registro inventario: " . pg_last_error($conexion));
-                        }
-                        
-                        // 7. Insertar en movimiento
-                        $observacion = "Entrada de proveedor - Compra: $cod_compra - $cantidad_cajas cajas ($unidades_agregadas unidades)";
-                        $query_movimiento = "INSERT INTO movimiento (cod_movimiento, cod_producto, cod_tipomovimiento, fecha_movimiento, cod_usuario, observacion) 
-                                           VALUES ('$cod_movimiento', '$cod_producto', '$cod_tipomovimiento', '$fecha_entrada', '$cod_usuario', '$observacion')";
-                        
-                        if(!pg_query($conexion, $query_movimiento)) {
-                            throw new Exception("Error al insertar movimiento: " . pg_last_error($conexion));
-                        }
-                        
-                        // 8. Insertar en historialproductos SOLO SI EXISTE EL TIPO DE ACCIÓN
-                        if (!empty($cod_tipoaccion)) {
-                            $observacion_historial = "Entrada de $cantidad_cajas cajas ($unidades_agregadas unidades) - Compra: $cod_compra - Total: S/ $total";
-                            $query_historial = "INSERT INTO historialproductos (cod_historialproductos, cod_usuario, cod_producto, cod_tipoaccion, observacion) 
-                                              VALUES ('$cod_historial', '$cod_usuario', '$cod_producto', '$cod_tipoaccion', '$observacion_historial')";
-                            
-                            if(!pg_query($conexion, $query_historial)) {
-                                // Si falla el historial, solo loguear el error pero no detener el proceso
-                                error_log("Error al insertar historial (continuando sin historial): " . pg_last_error($conexion));
-                            }
-                        }
-                    }
-                }
-                
-                // Confirmar transacción
-                pg_query($conexion, "COMMIT");
-                
-                echo "<script>
-                    alert('Entrada registrada correctamente. Stock actualizado. Código de compra: $cod_compra');
-                    window.location.href = 'entradaproveedor.php?tab=nuevaEntrada';
-                </script>";
-                
-            } catch (Exception $e) {
-                // Revertir transacción en caso de error
-                pg_query($conexion, "ROLLBACK");
-                echo "<script>alert('Error: " . $e->getMessage() . "');</script>";
-            }
-        }
-    ?>
-
     <div class="grid">
         <main class="principal">
             <button class="boton-menu" id="mobileMenuBtn">
@@ -335,12 +323,13 @@
                 </div>
 
                 <div class="nav flex-column mt-3">
-                    <a href="dashboard.php" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
-                    <a href="gestionproductos.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
-                    <a href="almacenproveedores.php" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
+                    <a href="dashboard.html" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="gestionproductos.html" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
+                    <a href="almacenproveedores.html" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
                     <a href="entradaproveedor.php" class="nav-link active"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
-                    <a href="notificaciones.php" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
-                    <a href="reportes.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
+                    <a href="registrodevolucioncompra.php" class="nav-link"><ul><i class="fas fa-undo-alt"></i>Devoluciones</ul></a>
+                    <a href="notificaciones.html" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
+                    <a href="reportes.html" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
                 </div>
             </div>
         </main>
@@ -359,7 +348,7 @@
                                 <span class="arrow" id="arrow">▲</span>
                             </button>
                             <ul class="dropdown-list" id="dropdownList">
-                                <a href="../login.php" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                                <a href="../login.html" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
                             </ul>
                         </div>
                     </div> 
@@ -407,7 +396,7 @@
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label">Proveedor: <span class="text-danger">*</span></label>
-                                            <select class="form-select" id="proveedorSelect" name="proveedor" required>
+                                            <select class="form-select" id="proveedorSelect" name="proveedor" required onchange="filtrarProductosPorProveedor()">
                                                 <option value="">Seleccione proveedor</option>
                                                 <?php
                                                 if($result1) {
@@ -419,25 +408,12 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Fecha de Entrada: <span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control" id="fechaEntrada" name="fecha_entrada" value="<?php echo date('Y-m-d'); ?>" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">N° Factura/Comprobante: (Opcional)</label>
+                                            <label class="form-label">N° Factura: (Opcional)</label>
                                             <input type="text" class="form-control" id="numeroFactura" name="numero_factura" placeholder="Ej: F001-1245">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Tipo de Documento:</label>
-                                            <select class="form-select" id="tipoComprobante" name="tipo_comprobante">
-                                                <option value="">Seleccione documento</option>
-                                                <?php
-                                                if($result2) {
-                                                    while($row2 = pg_fetch_assoc($result2)){
-                                                        echo "<option value='{$row2['cod_tipodocumento']}'>{$row2['nombre']}</option>";
-                                                    }
-                                                }
-                                                ?>
-                                            </select>
+                                            <input type="text" class="form-control" value="Factura" readonly style="background-color: #f8f9fa;">
                                         </div>
                                     </div>
 
@@ -463,15 +439,7 @@
                                                     <tr class="product-row">
                                                         <td>        
                                                             <select class="form-select product-select" name="productos[]" required onchange="cargarPrecioProducto(this)">
-                                                                <option value="">Seleccione producto</option>
-                                                                <?php
-                                                                if($result3) {
-                                                                    pg_result_seek($result3, 0);
-                                                                    while($row3 = pg_fetch_assoc($result3)){
-                                                                        echo "<option value='{$row3['cod_producto']}' data-precio='{$row3['precio_caja']}' data-unidades='{$row3['unidades_por_caja']}'>{$row3['nombre']}</option>";
-                                                                    }
-                                                                }
-                                                                ?>
+                                                                <option value="">Seleccione proveedor primero</option>
                                                             </select>
                                                         </td>
                                                         <td>
@@ -509,7 +477,7 @@
 
                                     <div class="mt-4 text-end">
                                         <button type="reset" class="btn btn-secondary me-2" onclick="resetForm()">Cancelar</button>
-                                        <button type="submit" class="btn btn-mad">
+                                        <button type="submit" class="btn btn-primary">
                                             <i class="fas fa-save me-1"></i>Registrar Entrada
                                         </button>
                                     </div>
@@ -575,14 +543,14 @@
                                         </thead>
                                         <tbody>
                                             <?php
+                                            $total_compras = 0;
                                             if($result4 && pg_num_rows($result4) > 0) {
-                                                $total_compras = 0;
                                                 while($row4 = pg_fetch_assoc($result4)){
                                                     $total_compras++;
                                                     echo "
                                                     <tr>
                                                         <td><strong>{$row4['cod_compra']}</strong></td>
-                                                        <td>{$row4['fecha']}</td>
+                                                        <td>" . date('d/m/Y H:i', strtotime($row4['fecha'])) . "</td>
                                                         <td>{$row4['proveedor_nombre']}</td>
                                                         <td><span class='badge bg-info'>{$row4['total_productos']} productos</span></td>
                                                         <td><strong>S/ " . number_format($row4['total_compra'], 2) . "</strong></td>
@@ -592,7 +560,7 @@
                                                             <button class='btn btn-sm btn-outline-primary action-btn' title='Ver detalles' onclick='verDetallesCompra(\"{$row4['cod_compra']}\")'>
                                                                 <i class='fas fa-eye'></i>
                                                             </button>
-                                                            <button class='btn btn-sm btn-outline-success action-btn' title='Descargar PDF'>
+                                                            <button class='btn btn-sm btn-outline-success action-btn' title='Descargar PDF' onclick='generarPdf(\"{$row4['cod_compra']}\")'>
                                                                 <i class='fas fa-file-pdf'></i>
                                                             </button>
                                                         </td>
@@ -600,7 +568,7 @@
                                                     ";
                                                 }
                                             } else {
-                                                echo "<tr><td colspan='8' class='text-center py-4'>No hay compras registradas " . 
+                                                echo "<tr><td colspan='8' class='text-center py-4'>No hay compras registradas con productos " . 
                                                      (!empty($busqueda) ? "para la búsqueda '" . htmlspecialchars($busqueda) . "'" : "") . 
                                                      ($filtro !== 'todos' ? " en el período seleccionado" : "") . 
                                                      "</td></tr>";
@@ -613,7 +581,7 @@
                             <div class="card-footer">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <strong>Total: <?php echo $total_compras ?? 0; ?> compra(s)</strong>
+                                        <strong>Total: <?php echo $total_compras; ?> compra(s) con productos</strong>
                                     </div>
                                     <?php if(!empty($busqueda) || $filtro !== 'todos'): ?>
                                     <div>
@@ -633,7 +601,7 @@
 
     <!-- Modal para ver detalles de compra -->
     <div class="modal fade" id="modalDetallesCompra" tabindex="-1" aria-labelledby="modalDetallesCompraLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalDetallesCompraLabel">Detalles de Compra</h5>
@@ -646,6 +614,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" onclick="descargarPDF()">
+                        <i class="fas fa-file-pdf me-1"></i>Descargar PDF
+                    </button>
                 </div>
             </div>
         </div>
@@ -656,6 +627,50 @@
         // Array con precios de productos (se llena con PHP)
         const preciosProductos = <?php echo json_encode($precios_productos); ?>;
         const unidadesPorCaja = <?php echo json_encode($unidades_por_caja); ?>;
+        const productosPorProveedor = <?php echo json_encode($productos_por_proveedor); ?>;
+
+        // NUEVA FUNCIÓN: Filtrar productos según el proveedor seleccionado
+        function filtrarProductosPorProveedor() {
+            const proveedorSelect = document.getElementById('proveedorSelect');
+            const proveedorId = proveedorSelect.value;
+            
+            // Obtener todos los selects de productos
+            const productSelects = document.querySelectorAll('.product-select');
+            
+            productSelects.forEach(select => {
+                // Limpiar opciones actuales
+                select.innerHTML = '<option value="">Seleccione producto</option>';
+                
+                if (proveedorId && productosPorProveedor[proveedorId]) {
+                    // Agregar productos del proveedor seleccionado
+                    productosPorProveedor[proveedorId].forEach(producto => {
+                        const option = document.createElement('option');
+                        option.value = producto.cod_producto;
+                        option.textContent = producto.nombre;
+                        option.setAttribute('data-precio', producto.precio_caja);
+                        option.setAttribute('data-unidades', producto.unidades_por_caja);
+                        select.appendChild(option);
+                    });
+                } else if (!proveedorId) {
+                    select.innerHTML = '<option value="">Seleccione proveedor primero</option>';
+                } else {
+                    select.innerHTML = '<option value="">Este proveedor no tiene productos</option>';
+                }
+            });
+            
+            // Resetear precios y cálculos
+            resetearCalculos();
+        }
+
+        function resetearCalculos() {
+            document.querySelectorAll('.product-row').forEach(row => {
+                row.querySelector('.precio-caja-input').value = '0.00';
+                row.querySelector('.unidades-caja').textContent = '0';
+                row.querySelector('.total-unidades').textContent = '0';
+                row.querySelector('.total-producto').textContent = 'S/ 0.00';
+            });
+            calcularTotalGeneral();
+        }
 
         // Funciones JavaScript para la interactividad
         function cargarPrecioProducto(selectElement) {
@@ -713,15 +728,7 @@
             newRow.innerHTML = `
                 <td>        
                     <select class="form-select product-select" name="productos[]" required onchange="cargarPrecioProducto(this)">
-                        <option value="">Seleccione producto</option>
-                        <?php
-                        if($result3) {
-                            pg_result_seek($result3, 0);
-                            while($row3 = pg_fetch_assoc($result3)){
-                                echo "<option value='{$row3['cod_producto']}' data-precio='{$row3['precio_caja']}' data-unidades='{$row3['unidades_por_caja']}'>{$row3['nombre']}</option>";
-                            }
-                        }
-                        ?>
+                        <option value="">Seleccione proveedor primero</option>
                     </select>
                 </td>
                 <td>
@@ -741,6 +748,12 @@
             `;
             tbody.appendChild(newRow);
             actualizarContadorProductos();
+            
+            // Si hay un proveedor seleccionado, cargar sus productos en la nueva fila
+            const proveedorSelect = document.getElementById('proveedorSelect');
+            if (proveedorSelect.value) {
+                filtrarProductosPorProveedor();
+            }
         }
 
         function eliminarFila(button) {
@@ -769,6 +782,12 @@
             });
             document.getElementById('totalGeneral').textContent = 'S/ 0.00';
             actualizarContadorProductos();
+            
+            // Resetear selects de productos
+            const productSelects = document.querySelectorAll('.product-select');
+            productSelects.forEach(select => {
+                select.innerHTML = '<option value="">Seleccione proveedor primero</option>';
+            });
         }
 
         // Funciones para el filtrado del historial
@@ -794,19 +813,45 @@
         }
 
         function verDetallesCompra(codCompra) {
+            // Mostrar loading
+            document.getElementById('detallesCompraContent').innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                    <p class="mt-2">Cargando detalles de la compra...</p>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalDetallesCompra'));
+            modal.show();
+            
             fetch('obtener_detalles_compra.php?cod_compra=' + codCompra)
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error en la respuesta del servidor: ' + response.status);
+                    }
+                    return response.text();
+                })
                 .then(data => {
                     document.getElementById('detallesCompraContent').innerHTML = data;
-                    const modal = new bootstrap.Modal(document.getElementById('modalDetallesCompra'));
-                    modal.show();
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    document.getElementById('detallesCompraContent').innerHTML = '<p>Error al cargar los detalles</p>';
-                    const modal = new bootstrap.Modal(document.getElementById('modalDetallesCompra'));
-                    modal.show();
+                    document.getElementById('detallesCompraContent').innerHTML = 
+                        '<div class="alert alert-danger text-center">' +
+                        '<i class="fas fa-exclamation-triangle fa-2x mb-3"></i>' +
+                        '<h5>Error al cargar los detalles</h5>' +
+                        '<p class="mb-0">' + error.message + '</p>' +
+                        '</div>';
                 });
+        }
+
+        function descargarPDF() {
+            const element = document.getElementById('detallesCompraContent');
+            html2pdf().from(element).save('detalle_compra.pdf');
+        }
+
+        function generarPdf(codCompra) {
+            window.open('obtener_detalles_compra.php?cod_compra=' + codCompra + '&pdf=1', '_blank');
         }
 
         // Inicializar
@@ -814,12 +859,6 @@
             actualizarContadorProductos();
             calcularTotalGeneral();
             
-            // Cargar precios iniciales para la primera fila
-            const primeraFila = document.querySelector('.product-row');
-            if (primeraFila) {
-                cargarPrecioProducto(primeraFila.querySelector('.product-select'));
-            }
-
             // Configurar búsqueda en tiempo real
             const buscarHistorial = document.getElementById('buscarHistorial');
             if (buscarHistorial) {
@@ -829,41 +868,28 @@
                     }
                 });
             }
-
-            // Validación de fecha
-            document.getElementById("formEntrada").addEventListener("submit", function(event){
-                const fechaentrada = document.getElementById("fechaEntrada").value.trim();
-                const hoy = new Date();
-                const fecha = new Date(fechaentrada);
-
-                hoy.setHours(0,0,0,0);
-                fecha.setHours(0,0,0,0);
-
-                if(fecha > hoy){
-                    alert("La fecha no puede ser superior a la de hoy");
-                    event.preventDefault();
-                    return;
-                }
-            });
         });
 
-    const dropdownBtn = document.getElementById("dropdownBtn");
-    const dropdownList = document.getElementById("dropdownList");
-    const arrow = document.getElementById("arrow");
+        // Configurar eventos del dropdown
+        const dropdownBtn = document.getElementById("dropdownBtn");
+        const dropdownList = document.getElementById("dropdownList");
+        const arrow = document.getElementById("arrow");
 
-    dropdownBtn.addEventListener("click", () => {
-        const isVisible = dropdownList.style.display === "block";
-        dropdownList.style.display = isVisible ? "none" : "block";
-        arrow.style.transform = isVisible ? "rotate(0deg)" : "rotate(180deg)";
-    });
+        dropdownBtn.addEventListener("click", () => {
+            const isVisible = dropdownList.style.display === "block";
+            dropdownList.style.display = isVisible ? "none" : "block";
+            arrow.style.transform = isVisible ? "rotate(0deg)" : "rotate(180deg)";
+        });
                             
-    // Cierra el menú si haces clic fuera
-    document.addEventListener("click", (e) => {
-        if (!dropdownBtn.contains(e.target) && !dropdownList.contains(e.target)) {
-            dropdownList.style.display = "none";
-            arrow.style.transform = "rotate(0deg)";
-        }
-    });
+        // Cierra el menú si haces clic fuera
+        document.addEventListener("click", (e) => {
+            if (!dropdownBtn.contains(e.target) && !dropdownList.contains(e.target)) {
+                dropdownList.style.display = "none";
+                arrow.style.transform = "rotate(0deg)";
+            }
+        });
     </script>
+    <!-- Incluir la librería html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>
 </html>

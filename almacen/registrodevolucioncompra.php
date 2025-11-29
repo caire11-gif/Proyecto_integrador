@@ -24,11 +24,16 @@ if(!$conexion){
     exit;
 }
 
-$usuariovendedor = $_SESSION['nombreusuariovendedor'] ?? '';
-$apellidovendedor = $_SESSION['apellidousuariovendedor'] ?? '';
+// INCLUIR ARCHIVO DE LOGIN PARA OBTENER DATOS DEL USUARIO
+include('../login/ingresarlogin.php');
 
-$inicialNombre = substr($usuariovendedor, 0, 1);
-$inicialApellido = substr($apellidovendedor, 0, 1);
+// OBTENER DATOS DEL USUARIO DESDE LA SESIÓN
+$usuarioencargado = $_SESSION['nombreusuarioencargado'] ?? '';
+$apellidoencargado = $_SESSION['apellidousuarioencargado'] ?? '';
+$cod_usuario = $_SESSION['cod_usuario'] ?? 'USU001';
+
+$inicialNombre = substr($usuarioencargado, 0, 1);
+$inicialApellido = substr($apellidoencargado, 0, 1);
 
 // FUNCIÓN PARA VERIFICAR ESTRUCTURA DE TABLAS
 function verificarEstructuraTablas($conexion) {
@@ -44,33 +49,35 @@ function verificarEstructuraTablas($conexion) {
     return $columnas;
 }
 
-// FUNCIÓN PARA OBTENER DETALLES DE VENTA POR CÓDIGO DE VENTA
-function obtenerDetallesVenta($conexion, $cod_venta) {
-    error_log("Buscando detalles para venta: " . $cod_venta);
+// FUNCIÓN PARA OBTENER DETALLES DE COMPRA POR CÓDIGO DE COMPRA
+function obtenerDetallesCompra($conexion, $cod_compra) {
+    error_log("Buscando detalles para compra: " . $cod_compra);
     
-    // Primero obtener la venta específica
-    $queryVenta = "SELECT v.*, td.nombre as documento_nombre, td.serie, td.numero, mp.nombre as metodo_pago
-                   FROM venta v
-                   LEFT JOIN tipodocumento td ON v.cod_tipodocumento = td.cod_tipodocumento
-                   LEFT JOIN metodopago mp ON v.cod_metodopago = mp.cod_metodopago
-                   WHERE v.cod_venta = '$cod_venta'";
+    // Primero obtener la compra específica
+    $queryCompra = "SELECT c.*, p.razon_social as proveedor_nombre, td.nombre as documento_nombre, 
+                           td.serie, td.numero, mp.nombre as metodo_pago
+                   FROM compra c
+                   LEFT JOIN proveedor p ON c.cod_proveedor = p.cod_proveedor
+                   LEFT JOIN tipodocumento td ON c.cod_tipodocumento = td.cod_tipodocumento
+                   LEFT JOIN metodopago mp ON c.cod_metodopago = mp.cod_metodopago
+                   WHERE c.cod_compra = '$cod_compra'";
     
-    $resultVenta = pg_query($conexion, $queryVenta);
+    $resultCompra = pg_query($conexion, $queryCompra);
     
-    if(!$resultVenta || pg_num_rows($resultVenta) === 0) {
-        error_log("No se encontró venta con código: " . $cod_venta);
-        return ['venta' => null, 'detalles' => []];
+    if(!$resultCompra || pg_num_rows($resultCompra) === 0) {
+        error_log("No se encontró compra con código: " . $cod_compra);
+        return ['compra' => null, 'detalles' => []];
     }
     
-    $venta = pg_fetch_assoc($resultVenta);
-    error_log("Venta encontrada: " . json_encode($venta));
+    $compra = pg_fetch_assoc($resultCompra);
+    error_log("Compra encontrada: " . json_encode($compra));
     
-    // Obtener detalles de la venta específica
-    $queryDetalles = "SELECT dv.*, p.nombre as producto_nombre, p.stock, p.precio_venta
-                      FROM detalleventa dv
-                      LEFT JOIN producto p ON dv.cod_producto = p.cod_producto
-                      WHERE dv.cod_venta = '$cod_venta'
-                      ORDER BY dv.cod_detalleventa";
+    // Obtener detalles de la compra específica
+    $queryDetalles = "SELECT dc.*, pr.nombre as producto_nombre, pr.stock, pr.precio_compra_unidad
+                      FROM detallecompra dc
+                      LEFT JOIN producto pr ON dc.cod_producto = pr.cod_producto
+                      WHERE dc.cod_compra = '$cod_compra'
+                      ORDER BY dc.cod_detallecompra";
     
     $resultDetalles = pg_query($conexion, $queryDetalles);
     $detalles = [];
@@ -79,17 +86,17 @@ function obtenerDetallesVenta($conexion, $cod_venta) {
         $detalles = pg_fetch_all($resultDetalles);
         error_log("Detalles encontrados: " . count($detalles));
     } else {
-        error_log("No se encontraron detalles para venta: " . $cod_venta);
+        error_log("No se encontraron detalles para compra: " . $cod_compra);
     }
     
-    return ['venta' => $venta, 'detalles' => $detalles];
+    return ['compra' => $compra, 'detalles' => $detalles];
 }
 
-// FUNCIÓN PARA VERIFICAR SI YA EXISTE NOTA DE CRÉDITO PARA DETALLE DE VENTA
-function existeNotaCreditoVenta($conexion, $cod_detalleventa) {
+// FUNCIÓN PARA VERIFICAR SI YA EXISTE NOTA DE CRÉDITO PARA DETALLE DE COMPRA
+function existeNotaCreditoCompra($conexion, $cod_detallecompra) {
     $query = "SELECT COUNT(*) as count 
               FROM notacredito 
-              WHERE cod_detalleventa = '$cod_detalleventa'";
+              WHERE cod_detallecompra = '$cod_detallecompra'";
     
     $result = pg_query($conexion, $query);
     if($result) {
@@ -100,13 +107,13 @@ function existeNotaCreditoVenta($conexion, $cod_detalleventa) {
     return false;
 }
 
-// FUNCIÓN PARA OBTENER NOTAS DE CRÉDITO EXISTENTES PARA UNA VENTA
-function obtenerNotasCreditoVenta($conexion, $cod_venta) {
-    $query = "SELECT nc.*, dv.cod_producto, p.nombre as producto_nombre
+// FUNCIÓN PARA OBTENER NOTAS DE CRÉDITO EXISTENTES PARA UNA COMPRA
+function obtenerNotasCreditoCompra($conexion, $cod_compra) {
+    $query = "SELECT nc.*, dc.cod_producto, p.nombre as producto_nombre
               FROM notacredito nc
-              JOIN detalleventa dv ON nc.cod_detalleventa = dv.cod_detalleventa
-              JOIN producto p ON dv.cod_producto = p.cod_producto
-              WHERE dv.cod_venta = '$cod_venta'
+              JOIN detallecompra dc ON nc.cod_detallecompra = dc.cod_detallecompra
+              JOIN producto p ON dc.cod_producto = p.cod_producto
+              WHERE dc.cod_compra = '$cod_compra'
               ORDER BY nc.fecha_notacredito DESC";
     
     $result = pg_query($conexion, $query);
@@ -166,9 +173,9 @@ function generarCodigoInventario($conexion) {
     return $cod_inventario;
 }
 
-// FUNCIÓN PARA OBTENER EL CÓDIGO DE TIPO DE MOVIMIENTO PARA DEVOLUCIONES
-function obtenerCodigoTipoMovimientoDevolucion($conexion) {
-    $query = "SELECT cod_tipomovimiento FROM tipomovimiento WHERE nombre ILIKE '%devolución%' OR nombre ILIKE '%devolucion%' LIMIT 1";
+// FUNCIÓN PARA OBTENER EL CÓDIGO DE TIPO DE MOVIMIENTO PARA DEVOLUCIONES DE COMPRA
+function obtenerCodigoTipoMovimientoDevolucionCompra($conexion) {
+    $query = "SELECT cod_tipomovimiento FROM tipomovimiento WHERE nombre ILIKE '%devolución compra%' OR nombre ILIKE '%devolucion compra%' LIMIT 1";
     $result = pg_query($conexion, $query);
     
     if($result && pg_num_rows($result) > 0) {
@@ -177,42 +184,43 @@ function obtenerCodigoTipoMovimientoDevolucion($conexion) {
     }
     
     // Si no existe, crear uno por defecto
-    $cod_tipomovimiento = 'TMDEV';
-    $queryInsert = "INSERT INTO tipomovimiento (cod_tipomovimiento, nombre) VALUES ('$cod_tipomovimiento', 'Devolución Venta')";
+    $cod_tipomovimiento = 'TMDEVCOMP';
+    $queryInsert = "INSERT INTO tipomovimiento (cod_tipomovimiento, nombre) VALUES ('$cod_tipomovimiento', 'Devolución Compra')";
     pg_query($conexion, $queryInsert);
     
     return $cod_tipomovimiento;
 }
 
-// PROCESAR CREACIÓN DE NOTA DE CRÉDITO - VERSIÓN MEJORADA CON SECUENCIA NC01, NC02, etc. Y REGISTRO EN INVENTARIO
-if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'crear_nota_credito') {
+// PROCESAR CREACIÓN DE NOTA DE CRÉDITO PARA COMPRAS
+if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'crear_nota_credito_compra') {
     
     // LIMPIAR BUFFER ANTES DE PROCESAR
     if (ob_get_length()) ob_clean();
     
-    $cod_detalleventa = pg_escape_string($conexion, $_POST['cod_detalleventa']);
+    $cod_detallecompra = pg_escape_string($conexion, $_POST['cod_detallecompra']);
     $cantidad = intval($_POST['cantidad']);
     $motivo = pg_escape_string($conexion, $_POST['motivo']);
-    $cod_venta = pg_escape_string($conexion, $_POST['cod_venta']);
+    $cod_compra = pg_escape_string($conexion, $_POST['cod_compra']);
     
-    error_log("=== INICIANDO CREACIÓN NOTA CRÉDITO ===");
-    error_log("Datos recibidos: cod_detalleventa=$cod_detalleventa, cantidad=$cantidad, motivo=$motivo, cod_venta=$cod_venta");
+    error_log("=== INICIANDO CREACIÓN NOTA CRÉDITO COMPRA ===");
+    error_log("Datos recibidos: cod_detallecompra=$cod_detallecompra, cantidad=$cantidad, motivo=$motivo, cod_compra=$cod_compra");
     
     // Iniciar transacción
     pg_query($conexion, "BEGIN");
     
     try {
-        // 1. Verificar si ya existe nota de crédito para este detalle de venta
-        if(existeNotaCreditoVenta($conexion, $cod_detalleventa)) {
-            throw new Exception("Ya existe una nota de crédito para este producto en esta venta.");
+        // 1. Verificar si ya existe nota de crédito para este detalle de compra
+        if(existeNotaCreditoCompra($conexion, $cod_detallecompra)) {
+            throw new Exception("Ya existe una nota de crédito para este producto en esta compra.");
         }
         
-        // 2. Obtener información del detalle de venta
-        $queryDetalle = "SELECT dv.*, p.cod_producto, p.nombre as producto_nombre, v.cod_venta, p.precio_venta
-                         FROM detalleventa dv 
-                         JOIN producto p ON dv.cod_producto = p.cod_producto 
-                         JOIN venta v ON dv.cod_venta = v.cod_venta
-                         WHERE dv.cod_detalleventa = '$cod_detalleventa'";
+        // 2. Obtener información del detalle de compra
+        $queryDetalle = "SELECT dc.*, p.cod_producto, p.nombre as producto_nombre, c.cod_compra, 
+                                p.precio_compra_unidad, dc.cantidad_unidades as cantidad_comprada
+                         FROM detallecompra dc 
+                         JOIN producto p ON dc.cod_producto = p.cod_producto 
+                         JOIN compra c ON dc.cod_compra = c.cod_compra
+                         WHERE dc.cod_detallecompra = '$cod_detallecompra'";
         $resultDetalle = pg_query($conexion, $queryDetalle);
         
         if(!$resultDetalle) {
@@ -222,30 +230,29 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['a
         $detalleData = pg_fetch_assoc($resultDetalle);
         
         if(!$detalleData) {
-            throw new Exception("No se encontró el detalle de venta con ID: $cod_detalleventa");
+            throw new Exception("No se encontró el detalle de compra con ID: $cod_detallecompra");
         }
         
         error_log("Detalle encontrado: " . json_encode($detalleData));
         
-        $precio_unitario = floatval($detalleData['precio_unitario']);
+        $precio_compra_unidad = floatval($detalleData['precio_compra_unidad']);
         $cod_producto = $detalleData['cod_producto'];
         $producto_nombre = $detalleData['producto_nombre'];
-        $cod_venta_real = $detalleData['cod_venta'];
-        $cantidad_vendida = intval($detalleData['cantidad_unidades']);
-        $precio_venta_actual = floatval($detalleData['precio_venta']);
+        $cod_compra_real = $detalleData['cod_compra'];
+        $cantidad_comprada = intval($detalleData['cantidad_comprada']);
         
         // 3. Validar cantidad
-        error_log("Validando cantidad: $cantidad vs $cantidad_vendida");
-        if($cantidad > $cantidad_vendida) {
-            throw new Exception("La cantidad a devolver ($cantidad) no puede ser mayor a la cantidad vendida ($cantidad_vendida).");
+        error_log("Validando cantidad: $cantidad vs $cantidad_comprada");
+        if($cantidad > $cantidad_comprada) {
+            throw new Exception("La cantidad a devolver ($cantidad) no puede ser mayor a la cantidad comprada ($cantidad_comprada).");
         }
         
         if($cantidad < 1) {
             throw new Exception("La cantidad debe ser al menos 1.");
         }
         
-        // 4. Calcular monto de devolución
-        $monto_devolucion = $precio_unitario * $cantidad;
+        // 4. Calcular monto de devolución (basado en precio de compra)
+        $monto_devolucion = $precio_compra_unidad * $cantidad;
         error_log("Monto calculado: $monto_devolucion");
         
         // 5. Obtener el próximo número secuencial para nota de crédito
@@ -260,10 +267,10 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['a
         
         error_log("Código nota crédito generado: $cod_notacredito (secuencia: $proximoNumero)");
         
-        // 6. Obtener código de usuario (de la sesión) - usar uno por defecto si no existe
-        $cod_usuario = 'USU001'; // Usar un código de usuario por defecto
+        // 6. Obtener código de usuario (de la sesión)
+        $cod_usuario = $_SESSION['cod_usuario'] ?? 'USU001';
         
-        // 7. INSERTAR nota de crédito en la tabla notacredito (solo para ventas, cod_detallecompra será NULL)
+        // 7. INSERTAR nota de crédito en la tabla notacredito (para compras, cod_detalleventa será NULL)
         $queryNotaCredito = "INSERT INTO notacredito (
                             cod_notacredito, 
                             cod_detalleventa, 
@@ -275,8 +282,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['a
                             monto_devolucion
                         ) VALUES (
                             '$cod_notacredito',
-                            '$cod_detalleventa',
-                            NULL,  -- cod_detallecompra es NULL para devoluciones de ventas
+                            NULL,  -- cod_detalleventa es NULL para devoluciones de compras
+                            '$cod_detallecompra',
                             '$cod_usuario',
                             CURRENT_DATE,
                             '$motivo',
@@ -293,8 +300,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['a
         }
         error_log("Nota de crédito insertada correctamente en tabla notacredito");
         
-        // 8. AUMENTAR stock del producto
-        $queryUpdateStock = "UPDATE producto SET stock = stock + $cantidad WHERE cod_producto = '$cod_producto'";
+        // 8. DISMINUIR stock del producto (porque estamos devolviendo al proveedor)
+        $queryUpdateStock = "UPDATE producto SET stock = stock - $cantidad WHERE cod_producto = '$cod_producto'";
         error_log("Ejecutando query: $queryUpdateStock");
         $resultUpdate = pg_query($conexion, $queryUpdateStock);
         if(!$resultUpdate) {
@@ -307,8 +314,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['a
         // 9. REGISTRAR EN INVENTARIO - NUEVA FUNCIONALIDAD CON TIMESTAMP
         $cod_inventario = generarCodigoInventario($conexion);
         
-        $cod_tipomovimiento = obtenerCodigoTipoMovimientoDevolucion($conexion);
-        $total_inventario = $precio_venta_actual * $cantidad;
+        $cod_tipomovimiento = obtenerCodigoTipoMovimientoDevolucionCompra($conexion);
+        $total_inventario = $precio_compra_unidad * $cantidad;
         
         // Usar CURRENT_TIMESTAMP para incluir hora actual
         $queryInventario = "INSERT INTO registroinventario (
@@ -328,7 +335,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['a
                             '$cod_producto',
                             '$cod_tipomovimiento',
                             $cantidad,
-                            $precio_venta_actual,
+                            $precio_compra_unidad,
                             $total_inventario,
                             '$cod_notacredito'
                         )";
@@ -348,7 +355,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['a
         
         echo json_encode([
             'success' => true, 
-            'message' => "✅ NOTA DE CRÉDITO CREADA EXITOSAMENTE\n\n📋 Código: $cod_notacredito\n📦 Producto: $producto_nombre\n🔢 Cantidad: $cantidad unidades\n💰 Monto: S/ " . number_format($monto_devolucion, 2) . "\n📈 Stock actualizado: +$cantidad unidades\n📊 Registro en inventario: $cod_inventario",
+            'message' => "✅ NOTA DE CRÉDITO CREADA EXITOSAMENTE\n\n📋 Código: $cod_notacredito\n📦 Producto: $producto_nombre\n🔢 Cantidad: $cantidad unidades\n💰 Monto: S/ " . number_format($monto_devolucion, 2) . "\n📈 Stock actualizado: -$cantidad unidades\n📊 Registro en inventario: $cod_inventario",
             'cod_notacredito' => $cod_notacredito,
             'monto' => $monto_devolucion,
             'cod_inventario' => $cod_inventario
@@ -363,18 +370,18 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['a
     }
 }
 
-// API para obtener detalles de venta
-if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'obtener_detalles_venta') {
+// API para obtener detalles de compra
+if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'obtener_detalles_compra') {
     
     // LIMPIAR BUFFER ANTES DE PROCESAR
     if (ob_get_length()) ob_clean();
     
-    $cod_venta = pg_escape_string($conexion, $_POST['cod_venta']);
-    $detalles = obtenerDetallesVenta($conexion, $cod_venta);
+    $cod_compra = pg_escape_string($conexion, $_POST['cod_compra']);
+    $detalles = obtenerDetallesCompra($conexion, $cod_compra);
     
-    // Obtener notas de crédito existentes si hay venta
-    if($detalles['venta']) {
-        $notas_credito = obtenerNotasCreditoVenta($conexion, $detalles['venta']['cod_venta']);
+    // Obtener notas de crédito existentes si hay compra
+    if($detalles['compra']) {
+        $notas_credito = obtenerNotasCreditoCompra($conexion, $detalles['compra']['cod_compra']);
         $detalles['notas_credito'] = $notas_credito;
     }
     
@@ -389,32 +396,32 @@ header('Content-Type: text/html; charset=utf-8');
 // Ejecutar verificación
 $columnasNotaCredito = verificarEstructuraTablas($conexion);
 
-// OBTENER SOLO LAS VENTAS REALES QUE EXISTEN EN LA BSD
+// OBTENER SOLO LAS COMPRAS REALES QUE EXISTEN EN LA BSD
 $queryComprobantes = "SELECT 
-                        v.cod_venta,
-                        v.cod_tipodocumento,
-                        v.fecha_venta,
-                        v.dni,
-                        v.nombre as cliente_nombre,
-                        v.email,
-                        v.cod_metodopago,
+                        c.cod_compra,
+                        c.cod_tipodocumento,
+                        c.fecha_compra,
+                        p.razon_social as proveedor_nombre,
+                        p.ruc,
+                        c.cod_metodopago,
                         td.nombre as documento_nombre,
                         td.serie,
                         td.numero,
                         mp.nombre as metodo_pago,
-                        (SELECT SUM(dv.precio_unitario * dv.cantidad_unidades) 
-                         FROM detalleventa dv 
-                         WHERE dv.cod_venta = v.cod_venta) as total_venta,
+                        (SELECT SUM(dc.total) 
+                         FROM detallecompra dc 
+                         WHERE dc.cod_compra = c.cod_compra) as total_compra,
                         (SELECT COUNT(*) 
-                         FROM detalleventa dv 
-                         WHERE dv.cod_venta = v.cod_venta) as total_productos
-                      FROM venta v
-                      LEFT JOIN tipodocumento td ON v.cod_tipodocumento = td.cod_tipodocumento
-                      LEFT JOIN metodopago mp ON v.cod_metodopago = mp.cod_metodopago
+                         FROM detallecompra dc 
+                         WHERE dc.cod_compra = c.cod_compra) as total_productos
+                      FROM compra c
+                      LEFT JOIN proveedor p ON c.cod_proveedor = p.cod_proveedor
+                      LEFT JOIN tipodocumento td ON c.cod_tipodocumento = td.cod_tipodocumento
+                      LEFT JOIN metodopago mp ON c.cod_metodopago = mp.cod_metodopago
                       WHERE EXISTS (
-                          SELECT 1 FROM detalleventa dv WHERE dv.cod_venta = v.cod_venta
+                          SELECT 1 FROM detallecompra dc WHERE dc.cod_compra = c.cod_compra
                       )
-                      ORDER BY v.fecha_venta DESC, v.cod_venta DESC";
+                      ORDER BY c.fecha_compra DESC, c.cod_compra DESC";
 
 $resultComprobantes = pg_query($conexion, $queryComprobantes);
 $comprobantes = [];
@@ -422,44 +429,44 @@ if($resultComprobantes) {
     $comprobantes = pg_fetch_all($resultComprobantes) ?: [];
 }
 
-error_log("VENTAS ENCONTRADAS: " . count($comprobantes));
+error_log("COMPRAS ENCONTRADAS: " . count($comprobantes));
 
 // PROCESAR BÚSQUEDA MEJORADA
 $resultadosBusqueda = [];
 if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
     $termino = pg_escape_string($conexion, $_GET['buscar']);
     $queryBusqueda = "SELECT 
-                        v.cod_venta,
-                        v.cod_tipodocumento,
-                        v.fecha_venta,
-                        v.dni,
-                        v.nombre as cliente_nombre,
-                        v.email,
-                        v.cod_metodopago,
+                        c.cod_compra,
+                        c.cod_tipodocumento,
+                        c.fecha_compra,
+                        p.razon_social as proveedor_nombre,
+                        p.ruc,
+                        c.cod_metodopago,
                         td.nombre as documento_nombre,
                         td.serie,
                         td.numero,
                         mp.nombre as metodo_pago,
-                        (SELECT SUM(dv.precio_unitario * dv.cantidad_unidades) 
-                         FROM detalleventa dv 
-                         WHERE dv.cod_venta = v.cod_venta) as total_venta,
+                        (SELECT SUM(dc.total) 
+                         FROM detallecompra dc 
+                         WHERE dc.cod_compra = c.cod_compra) as total_compra,
                         (SELECT COUNT(*) 
-                         FROM detalleventa dv 
-                         WHERE dv.cod_venta = v.cod_venta) as total_productos
-                      FROM venta v
-                      LEFT JOIN tipodocumento td ON v.cod_tipodocumento = td.cod_tipodocumento
-                      LEFT JOIN metodopago mp ON v.cod_metodopago = mp.cod_metodopago
+                         FROM detallecompra dc 
+                         WHERE dc.cod_compra = c.cod_compra) as total_productos
+                      FROM compra c
+                      LEFT JOIN proveedor p ON c.cod_proveedor = p.cod_proveedor
+                      LEFT JOIN tipodocumento td ON c.cod_tipodocumento = td.cod_tipodocumento
+                      LEFT JOIN metodopago mp ON c.cod_metodopago = mp.cod_metodopago
                       WHERE EXISTS (
-                          SELECT 1 FROM detalleventa dv WHERE dv.cod_venta = v.cod_venta
+                          SELECT 1 FROM detallecompra dc WHERE dc.cod_compra = c.cod_compra
                       )
-                      AND (v.cod_venta ILIKE '%$termino%' 
-                         OR v.dni ILIKE '%$termino%'
-                         OR v.nombre ILIKE '%$termino%'
+                      AND (c.cod_compra ILIKE '%$termino%' 
+                         OR p.razon_social ILIKE '%$termino%'
+                         OR p.ruc ILIKE '%$termino%'
                          OR td.nombre ILIKE '%$termino%'
                          OR td.serie ILIKE '%$termino%'
                          OR CAST(td.numero AS TEXT) ILIKE '%$termino%'
-                         OR v.cod_tipodocumento ILIKE '%$termino%')
-                      ORDER BY v.fecha_venta DESC, v.cod_venta DESC";
+                         OR c.cod_tipodocumento ILIKE '%$termino%')
+                      ORDER BY c.fecha_compra DESC, c.cod_compra DESC";
     
     $resultBusqueda = pg_query($conexion, $queryBusqueda);
     if($resultBusqueda) {
@@ -472,11 +479,11 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mad Market - Registro de Devoluciones</title>
+    <title>Mad Market - Devoluciones de Compra</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/vendedor-estilo.css">
-    <link rel="stylesheet" href="css/vendedor-boton/boton.css">
+    <link rel="stylesheet" href="css/almacen-estilo.css">
+    <link rel="stylesheet" href="css/almacen-boton/boton.css">
     <style>
         /* ELIMINAR EL FONDO OSCURO DEL MODAL */
         .modal-backdrop {
@@ -507,7 +514,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
             margin: 0 auto;
         }
 
-        .buscar-venta, .info-venta {
+        .buscar-compra, .info-compra {
             background: white;
             border-radius: 12px;
             padding: 25px;
@@ -516,7 +523,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
             border: 1px solid #e0e0e0;
         }
 
-        .busqueda-venta {
+        .busqueda-compra {
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -677,7 +684,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
             box-shadow: none;
         }
 
-        .resumen-venta {
+        .resumen-compra {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 20px;
@@ -685,7 +692,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
             margin-bottom: 20px;
         }
 
-        .cliente-info {
+        .proveedor-info {
             background: #e8f4fd;
             padding: 20px;
             border-radius: 12px;
@@ -758,6 +765,50 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
             font-family: monospace;
             font-size: 12px;
         }
+
+        /* Estilos para el dropdown de usuario */
+        .dropdown-container {
+            position: relative;
+        }
+
+        .dropdown-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown-list {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 180px;
+            z-index: 1000;
+            margin-top: 5px;
+        }
+
+        .dropdown-list a {
+            display: block;
+            padding: 10px 15px;
+            color: #333;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .dropdown-list a:hover {
+            background-color: #f8f9fa;
+        }
+
+        .arrow {
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -772,15 +823,17 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
             <div class="barra-lateral" id="barra-lateral">
                 <div class="logo">
                     <h4><i class="fas fa-store"></i> MAD MARKET</h4>
-                    <small id="userRole">Vendedor</small>
+                    <small id="userRole">Almacén</small>
                 </div>
 
                 <div class="nav flex-column mt-3">
                     <a href="dashboard.html" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
-                    <a href="nuevaventa.php" class="nav-link"><ul><i class="fas fa-cash-register"></i>Nueva Venta</ul></a>
-                    <a href="registrodevolucion.php" class="nav-link active"><ul><i class="fas fa-undo-alt"></i>Registrar Devolución</ul></a>
-                    <a href="boletafactura.php" class="nav-link"><ul><i class="fas fa-receipt"></i>Boletas/Facturas</ul></a>
-                    <a href="consultastock.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Consulta Stock</ul></a>
+                    <a href="gestionproductos.php" class="nav-link"><ul><i class="fas fa-boxes"></i>Gestión de Productos</ul></a>
+                    <a href="almacenproveedores.html" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
+                    <a href="entradaproveedor.php" class="nav-link active"><ul><i class="fas fa-truck-loading"></i>Entradas Proveedor</ul></a>
+                    <a href="registrodevolucioncompra.php" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Devoluciones</ul></a>
+                    <a href="notificaciones.html" class="nav-link"><ul><i class="fas fa-bell"></i>Notificaciones</ul></a>
+                    <a href="reportes.html" class="nav-link"><ul><i class="fas fa-chart-bar"></i>Reportes</ul></a>
                 </div>
             </div>
         </main>
@@ -790,8 +843,8 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                 <div class="usuario-info">
                     <div class="usuario-avatar" id="usuarioAvatar"><?php echo htmlspecialchars($inicialNombre.$inicialApellido)?></div>
                     <div>
-                        <div class="fw-bold fs-5" id="userName"><?php echo htmlspecialchars($usuariovendedor." ".$apellidovendedor) ?></div>
-                        <small class="text-muted" id="userPosition">Vendedor</small>
+                        <div class="fw-bold fs-5" id="userName"><?php echo htmlspecialchars($usuarioencargado." ".$apellidoencargado) ?></div>
+                        <small class="text-muted" id="userPosition">Almacén</small>
                     </div>
                     <div class="dropdown-container">
                         <div class="dropdown">
@@ -808,23 +861,23 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
 
             <main class="devoluciones-main">
                 
-                <section class="buscar-venta">
-                    <h3 class="mb-4"><i class="fas fa-undo-alt"></i> Registro de Devoluciones</h3>
-                    <p class="text-muted mb-4">Busca y selecciona una venta real para procesar devoluciones de productos específicos</p>
+                <section class="buscar-compra">
+                    <h3 class="mb-4"><i class="fas fa-undo-alt"></i> Devoluciones de Compra</h3>
+                    <p class="text-muted mb-4">Busca y selecciona una compra para procesar devoluciones de productos al proveedor</p>
                     
                     <!-- Debug info -->
                     <div class="debug-info">
-                        <strong>DEBUG:</strong> Mostrando <?php echo count($comprobantes); ?> ventas encontradas en la base de datos
+                        <strong>DEBUG:</strong> Mostrando <?php echo count($comprobantes); ?> compras encontradas en la base de datos
                     </div>
                     
-                    <div class="busqueda-venta">
+                    <div class="busqueda-compra">
                         <form method="GET" action="">
                             <div class="busqueda-input">
-                                <input type="text" name="buscar" id="inputBusquedaVenta" 
-                                       placeholder="🔍 Buscar por código de venta, DNI cliente, nombre, serie o número..." 
+                                <input type="text" name="buscar" id="inputBusquedaCompra" 
+                                       placeholder="🔍 Buscar por código de compra, RUC proveedor, razón social, serie o número..." 
                                        value="<?php echo isset($_GET['buscar']) ? htmlspecialchars($_GET['buscar']) : ''; ?>" 
                                        autofocus>
-                                <button type="submit" id="btnBuscarVenta" class="btn btn-primary btn-lg">
+                                <button type="submit" id="btnBuscarCompra" class="btn btn-primary btn-lg">
                                     <i class="fas fa-search"></i> Buscar
                                 </button>
                             </div>
@@ -838,32 +891,32 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                                 <div class="p-3 border-bottom bg-light">
                                     <h6 class="mb-0">
                                         <i class="fas fa-list"></i>
-                                        <?php echo isset($_GET['buscar']) ? 'Resultados de búsqueda' : 'Ventas Registradas'; ?>
+                                        <?php echo isset($_GET['buscar']) ? 'Resultados de búsqueda' : 'Compras Registradas'; ?>
                                         <span class="badge bg-primary ms-2"><?php echo count($documentosMostrar); ?></span>
                                     </h6>
                                 </div>
                                 <?php foreach($documentosMostrar as $documento): ?>
-                                    <div class="resultado-item" onclick="mostrarDetallesVenta('<?php echo $documento['cod_venta']; ?>')">
+                                    <div class="resultado-item" onclick="mostrarDetallesCompra('<?php echo $documento['cod_compra']; ?>')">
                                         <div class="documento-info">
                                             <div class="documento-datos">
                                                 <strong class="fs-5">
                                                     <?php echo $documento['documento_nombre'] ?: 'Sin documento'; ?>
-                                                    <?php if($documento['total_venta']): ?>
-                                                        <span class="total-badge">S/ <?php echo number_format($documento['total_venta'], 2); ?></span>
+                                                    <?php if($documento['total_compra']): ?>
+                                                        <span class="total-badge">S/ <?php echo number_format($documento['total_compra'], 2); ?></span>
                                                     <?php endif; ?>
                                                 </strong>
                                                 <div class="mt-2">
-                                                    <span class="badge bg-secondary">Venta: <?php echo $documento['cod_venta']; ?></span>
+                                                    <span class="badge bg-secondary">Compra: <?php echo $documento['cod_compra']; ?></span>
                                                     <?php if($documento['serie']): ?>
                                                         <span class="badge bg-info">Serie: <?php echo $documento['serie']; ?>-<?php echo $documento['numero']; ?></span>
                                                     <?php endif; ?>
                                                     <span class="badge bg-warning">Productos: <?php echo $documento['total_productos']; ?></span>
                                                 </div>
                                                 <div class="mt-1">
-                                                    <small><strong>Cliente:</strong> <?php echo $documento['cliente_nombre']; ?> | <strong>DNI:</strong> <?php echo $documento['dni']; ?></small>
+                                                    <small><strong>Proveedor:</strong> <?php echo $documento['proveedor_nombre']; ?> | <strong>RUC:</strong> <?php echo $documento['ruc']; ?></small>
                                                 </div>
                                                 <div class="mt-1">
-                                                    <small><strong>Fecha:</strong> <?php echo date('d/m/Y H:i', strtotime($documento['fecha_venta'])); ?> 
+                                                    <small><strong>Fecha:</strong> <?php echo date('d/m/Y H:i', strtotime($documento['fecha_compra'])); ?> 
                                                     <?php if($documento['metodo_pago']): ?>
                                                         | <strong>Método:</strong> <?php echo $documento['metodo_pago']; ?>
                                                     <?php endif; ?>
@@ -871,19 +924,19 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                                                 </div>
                                             </div>
                                             <div class="documento-numero">
-                                                <i class="fas fa-receipt fa-lg"></i>
+                                                <i class="fas fa-file-invoice fa-lg"></i>
                                             </div>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <div class="empty-state">
-                                    <i class="fas fa-receipt"></i>
-                                    <h5>No hay ventas registradas</h5>
-                                    <p class="mb-3">No se encontraron ventas con productos en el sistema.</p>
+                                    <i class="fas fa-file-invoice"></i>
+                                    <h5>No hay compras registradas</h5>
+                                    <p class="mb-3">No se encontraron compras con productos en el sistema.</p>
                                     <div class="alert alert-info">
                                         <i class="fas fa-info-circle"></i>
-                                        <strong>Información:</strong> Las ventas aparecerán aquí después de realizar ventas en el sistema.
+                                        <strong>Información:</strong> Las compras aparecerán aquí después de realizar compras en el sistema.
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -891,9 +944,9 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                     </div>
                 </section>
 
-                <section class="info-venta" id="seccionInfoVenta" style="display: none;">
-                    <h3 class="mb-4"><i class="fas fa-file-invoice"></i> Detalles de la Venta</h3>
-                    <div class="venta-detalle" id="detalleVenta">
+                <section class="info-compra" id="seccionInfoCompra" style="display: none;">
+                    <h3 class="mb-4"><i class="fas fa-file-invoice"></i> Detalles de la Compra</h3>
+                    <div class="compra-detalle" id="detalleCompra">
                         <!-- Información aparecerá aquí via JavaScript -->
                     </div>
                 </section>
@@ -902,18 +955,18 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
         </div>
     </div>
 
-    <!-- Modal para registrar devolución -->
-    <div class="modal fade" id="modalDevolucion" tabindex="-1">
+    <!-- Modal para registrar devolución de compra -->
+    <div class="modal fade" id="modalDevolucionCompra" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content modal-devolucion">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-undo-alt"></i> Registrar Devolución</h5>
+                    <h5 class="modal-title"><i class="fas fa-undo-alt"></i> Registrar Devolución de Compra</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="formDevolucion">
-                        <input type="hidden" id="cod_detalleventa_devolucion" name="cod_detalleventa">
-                        <input type="hidden" id="cod_venta_devolucion" name="cod_venta">
+                    <form id="formDevolucionCompra">
+                        <input type="hidden" id="cod_detallecompra_devolucion" name="cod_detallecompra">
+                        <input type="hidden" id="cod_compra_devolucion" name="cod_compra">
                         
                         <div class="row">
                             <div class="col-md-6">
@@ -939,25 +992,25 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Precio unitario:</label>
-                                    <input type="text" id="precio_unitario_devolucion" class="form-control" readonly>
+                                    <label class="form-label fw-bold">Precio compra unitario:</label>
+                                    <input type="text" id="precio_compra_unitario_devolucion" class="form-control" readonly>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Cantidad a devolver: <span id="monto_calculado" class="text-success"></span></label>
-                            <input type="number" id="cantidad_devolucion" name="cantidad" class="form-control" min="1" value="1" required onchange="calcularMonto()">
+                            <label class="form-label fw-bold">Cantidad a devolver al proveedor: <span id="monto_calculado" class="text-success"></span></label>
+                            <input type="number" id="cantidad_devolucion" name="cantidad" class="form-control" min="1" value="1" required onchange="calcularMontoCompra()">
                         </div>
                         
                         <div class="mb-3">
                             <label class="form-label fw-bold">Motivo de la devolución:</label>
-                            <textarea id="motivo_devolucion" name="motivo" class="form-control" rows="3" placeholder="Describe el motivo de la devolución (ej: producto defectuoso, cambio de talla, etc.)..." required></textarea>
+                            <textarea id="motivo_devolucion" name="motivo" class="form-control" rows="3" placeholder="Describe el motivo de la devolución (ej: producto defectuoso, exceso de stock, etc.)..." required></textarea>
                         </div>
                         
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i>
-                            <strong>Información:</strong> Al confirmar, se creará una nota de crédito, se aumentará el stock del producto y se registrará en el inventario automáticamente.
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Importante:</strong> Al confirmar, se creará una nota de crédito, se disminuirá el stock del producto (por devolución al proveedor) y se registrará en el inventario automáticamente.
                         </div>
                     </form>
                 </div>
@@ -965,7 +1018,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times"></i> Cancelar
                     </button>
-                    <button type="button" class="btn btn-danger" onclick="confirmarDevolucion()">
+                    <button type="button" class="btn btn-danger" onclick="confirmarDevolucionCompra()">
                         <i class="fas fa-check-circle"></i> Crear Nota de Crédito
                     </button>
                 </div>
@@ -975,25 +1028,25 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // FUNCIÓN PARA MOSTRAR DETALLES DE VENTA
-        async function mostrarDetallesVenta(cod_venta) {
-            console.log('Cargando detalles para venta:', cod_venta);
+        // FUNCIÓN PARA MOSTRAR DETALLES DE COMPRA
+        async function mostrarDetallesCompra(cod_compra) {
+            console.log('Cargando detalles para compra:', cod_compra);
             
-            document.getElementById('seccionInfoVenta').style.display = 'block';
-            document.getElementById('detalleVenta').innerHTML = `
+            document.getElementById('seccionInfoCompra').style.display = 'block';
+            document.getElementById('detalleCompra').innerHTML = `
                 <div class="text-center py-4">
                     <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
-                    <p class="mt-2">Cargando detalles de la venta...</p>
-                    <small class="text-muted">Venta: ${cod_venta}</small>
+                    <p class="mt-2">Cargando detalles de la compra...</p>
+                    <small class="text-muted">Compra: ${cod_compra}</small>
                 </div>
             `;
 
             try {
                 const formData = new FormData();
-                formData.append('accion', 'obtener_detalles_venta');
-                formData.append('cod_venta', cod_venta);
+                formData.append('accion', 'obtener_detalles_compra');
+                formData.append('cod_compra', cod_compra);
                 
-                const response = await fetch('registrodevolucion.php', {
+                const response = await fetch('registrodevolucioncompra.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -1015,38 +1068,38 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                 const data = JSON.parse(responseText);
                 console.log('Datos recibidos:', data);
                 
-                if (!data.venta) {
-                    document.getElementById('detalleVenta').innerHTML = `
+                if (!data.compra) {
+                    document.getElementById('detalleCompra').innerHTML = `
                         <div class="alert alert-warning text-center">
                             <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
-                            <h5>No se encontró la venta</h5>
-                            <p class="mb-0">La venta ${cod_venta} no existe o no tiene productos.</p>
+                            <h5>No se encontró la compra</h5>
+                            <p class="mb-0">La compra ${cod_compra} no existe o no tiene productos.</p>
                         </div>
                     `;
                     return;
                 }
 
-                const venta = data.venta;
+                const compra = data.compra;
                 const detalles = data.detalles;
                 const notasCredito = data.notas_credito || [];
                 
                 let productosHTML = '';
-                let totalVenta = 0;
+                let totalCompra = 0;
                 
                 if (detalles.length === 0) {
                     productosHTML = `
                         <div class="alert alert-warning text-center">
                             <i class="fas fa-box-open fa-2x mb-3"></i>
-                            <h5>No hay productos en esta venta</h5>
-                            <p class="mb-0">La venta no contiene productos para devolver.</p>
+                            <h5>No hay productos en esta compra</h5>
+                            <p class="mb-0">La compra no contiene productos para devolver.</p>
                         </div>
                     `;
                 } else {
                     // GENERAR TARJETAS DE PRODUCTOS
                     detalles.forEach((detalle, index) => {
-                        const tieneNotaCredito = notasCredito.some(nota => nota.cod_detalleventa === detalle.cod_detalleventa);
-                        const subtotal = parseFloat(detalle.precio_unitario) * parseInt(detalle.cantidad_unidades);
-                        totalVenta += subtotal;
+                        const tieneNotaCredito = notasCredito.some(nota => nota.cod_detallecompra === detalle.cod_detallecompra);
+                        const subtotal = parseFloat(detalle.total);
+                        totalCompra += subtotal;
                         
                         productosHTML += `
                             <div class="producto-card">
@@ -1063,11 +1116,11 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                                 
                                 <div class="producto-info">
                                     <div class="info-row">
-                                        <span class="info-label">Precio Unitario:</span>
-                                        <span class="info-value">S/ ${parseFloat(detalle.precio_unitario).toFixed(2)}</span>
+                                        <span class="info-label">Precio Compra Unitario:</span>
+                                        <span class="info-value">S/ ${parseFloat(detalle.precio_compra_unidad).toFixed(2)}</span>
                                     </div>
                                     <div class="info-row">
-                                        <span class="info-label">Cantidad Vendida:</span>
+                                        <span class="info-label">Cantidad Comprada:</span>
                                         <span class="info-value">${detalle.cantidad_unidades} unidades</span>
                                     </div>
                                     <div class="info-row">
@@ -1080,22 +1133,22 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                                     </div>
                                     <div class="info-row">
                                         <span class="info-label">ID Detalle:</span>
-                                        <span class="info-value text-muted">${detalle.cod_detalleventa}</span>
+                                        <span class="info-value text-muted">${detalle.cod_detallecompra}</span>
                                     </div>
                                 </div>
                                 
                                 <button class="btn-devolucion" 
-                                        onclick="abrirModalDevolucion(
-                                            '${detalle.cod_detalleventa}',
-                                            '${cod_venta}',
+                                        onclick="abrirModalDevolucionCompra(
+                                            '${detalle.cod_detallecompra}',
+                                            '${cod_compra}',
                                             '${detalle.producto_nombre}',
                                             '${detalle.cod_producto}',
                                             ${detalle.cantidad_unidades},
-                                            ${detalle.precio_unitario}
+                                            ${detalle.precio_compra_unidad}
                                         )"
                                         ${tieneNotaCredito ? 'disabled' : ''}>
                                     <i class="fas fa-undo-alt"></i> 
-                                    ${tieneNotaCredito ? 'Ya Devuelto' : 'Registrar Devolución'}
+                                    ${tieneNotaCredito ? 'Ya Devuelto' : 'Devolver al Proveedor'}
                                 </button>
                             </div>
                         `;
@@ -1129,37 +1182,36 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                     `;
                 }
 
-                document.getElementById('detalleVenta').innerHTML = `
-                    <div class="cliente-info">
+                document.getElementById('detalleCompra').innerHTML = `
+                    <div class="proveedor-info">
                         <div class="row">
                             <div class="col-md-6">
-                                <h5><i class="fas fa-user"></i> Información del Cliente</h5>
-                                <p><strong>Nombre:</strong> ${venta.nombre}</p>
-                                <p><strong>DNI:</strong> ${venta.dni}</p>
-                                ${venta.email ? `<p><strong>Email:</strong> ${venta.email}</p>` : ''}
+                                <h5><i class="fas fa-truck"></i> Información del Proveedor</h5>
+                                <p><strong>Razón Social:</strong> ${compra.proveedor_nombre}</p>
+                                <p><strong>RUC:</strong> ${compra.ruc}</p>
                             </div>
                             <div class="col-md-6">
                                 <h5><i class="fas fa-receipt"></i> Información del Comprobante</h5>
-                                <p><strong>Documento:</strong> ${venta.documento_nombre || 'No especificado'}</p>
-                                ${venta.serie ? `<p><strong>Serie:</strong> ${venta.serie} - <strong>Número:</strong> ${venta.numero}</p>` : ''}
-                                <p><strong>Método de Pago:</strong> ${venta.metodo_pago || 'No especificado'}</p>
+                                <p><strong>Documento:</strong> ${compra.documento_nombre || 'No especificado'}</p>
+                                ${compra.serie ? `<p><strong>Serie:</strong> ${compra.serie} - <strong>Número:</strong> ${compra.numero}</p>` : ''}
+                                <p><strong>Método de Pago:</strong> ${compra.metodo_pago || 'No especificado'}</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="resumen-venta">
+                    <div class="resumen-compra">
                         <div class="row text-center">
                             <div class="col-md-3">
-                                <h6>Código Venta</h6>
-                                <h4>${venta.cod_venta}</h4>
+                                <h6>Código Compra</h6>
+                                <h4>${compra.cod_compra}</h4>
                             </div>
                             <div class="col-md-3">
-                                <h6>Fecha de Venta</h6>
-                                <h4>${new Date(venta.fecha_venta).toLocaleDateString('es-PE')}</h4>
+                                <h6>Fecha de Compra</h6>
+                                <h4>${new Date(compra.fecha_compra).toLocaleDateString('es-PE')}</h4>
                             </div>
                             <div class="col-md-3">
-                                <h6>Total Venta</h6>
-                                <h4>S/ ${parseFloat(venta.total_venta || totalVenta).toFixed(2)}</h4>
+                                <h6>Total Compra</h6>
+                                <h4>S/ ${parseFloat(compra.total_compra || totalCompra).toFixed(2)}</h4>
                             </div>
                             <div class="col-md-3">
                                 <h6>Productos</h6>
@@ -1168,7 +1220,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                         </div>
                     </div>
                     
-                    <h5 class="mb-3"><i class="fas fa-boxes"></i> Productos de la Venta</h5>
+                    <h5 class="mb-3"><i class="fas fa-boxes"></i> Productos de la Compra</h5>
                     <div class="productos-grid">
                         ${productosHTML}
                     </div>
@@ -1178,10 +1230,10 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
 
             } catch (error) {
                 console.error('Error al cargar detalles:', error);
-                document.getElementById('detalleVenta').innerHTML = `
+                document.getElementById('detalleCompra').innerHTML = `
                     <div class="alert alert-danger text-center">
                         <i class="fas fa-times-circle fa-2x mb-3"></i>
-                        <h5>Error al cargar los detalles de la venta</h5>
+                        <h5>Error al cargar los detalles de la compra</h5>
                         <p class="mb-0">${error.message}</p>
                         <small class="mt-2">Revisa la consola para más detalles</small>
                     </div>
@@ -1189,43 +1241,43 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
             }
         }
 
-        // FUNCIÓN PARA ABRIR MODAL DE DEVOLUCIÓN
-        function abrirModalDevolucion(cod_detalleventa, cod_venta, producto_nombre, cod_producto, cantidad_maxima, precio_unitario) {
-            document.getElementById('cod_detalleventa_devolucion').value = cod_detalleventa;
-            document.getElementById('cod_venta_devolucion').value = cod_venta;
+        // FUNCIÓN PARA ABRIR MODAL DE DEVOLUCIÓN DE COMPRA
+        function abrirModalDevolucionCompra(cod_detallecompra, cod_compra, producto_nombre, cod_producto, cantidad_maxima, precio_compra_unitario) {
+            document.getElementById('cod_detallecompra_devolucion').value = cod_detallecompra;
+            document.getElementById('cod_compra_devolucion').value = cod_compra;
             document.getElementById('producto_nombre_devolucion').value = producto_nombre;
             document.getElementById('cod_producto_devolucion').value = cod_producto;
             document.getElementById('cantidad_maxima').value = cantidad_maxima + ' unidades';
-            document.getElementById('precio_unitario_devolucion').value = 'S/ ' + parseFloat(precio_unitario).toFixed(2);
+            document.getElementById('precio_compra_unitario_devolucion').value = 'S/ ' + parseFloat(precio_compra_unitario).toFixed(2);
             document.getElementById('cantidad_devolucion').setAttribute('max', cantidad_maxima);
             document.getElementById('cantidad_devolucion').value = 1;
             document.getElementById('motivo_devolucion').value = '';
             
-            calcularMonto();
+            calcularMontoCompra();
             
-            const modal = new bootstrap.Modal(document.getElementById('modalDevolucion'));
+            const modal = new bootstrap.Modal(document.getElementById('modalDevolucionCompra'));
             modal.show();
         }
 
-        // FUNCIÓN PARA CALCULAR MONTO DE DEVOLUCIÓN
-        function calcularMonto() {
+        // FUNCIÓN PARA CALCULAR MONTO DE DEVOLUCIÓN DE COMPRA
+        function calcularMontoCompra() {
             const cantidad = document.getElementById('cantidad_devolucion').value;
-            const precio = parseFloat(document.getElementById('precio_unitario_devolucion').value.replace('S/ ', ''));
+            const precio = parseFloat(document.getElementById('precio_compra_unitario_devolucion').value.replace('S/ ', ''));
             const monto = cantidad * precio;
             document.getElementById('monto_calculado').textContent = '(Monto: S/ ' + monto.toFixed(2) + ')';
         }
 
-        // FUNCIÓN PARA CONFIRMAR DEVOLUCIÓN
-        async function confirmarDevolucion() {
-            const cod_detalleventa = document.getElementById('cod_detalleventa_devolucion').value;
-            const cod_venta = document.getElementById('cod_venta_devolucion').value;
+        // FUNCIÓN PARA CONFIRMAR DEVOLUCIÓN DE COMPRA
+        async function confirmarDevolucionCompra() {
+            const cod_detallecompra = document.getElementById('cod_detallecompra_devolucion').value;
+            const cod_compra = document.getElementById('cod_compra_devolucion').value;
             const cantidad = document.getElementById('cantidad_devolucion').value;
             const motivo = document.getElementById('motivo_devolucion').value;
             const producto_nombre = document.getElementById('producto_nombre_devolucion').value;
             
             console.log("Datos a enviar:", {
-                cod_detalleventa,
-                cod_venta, 
+                cod_detallecompra,
+                cod_compra, 
                 cantidad,
                 motivo,
                 producto_nombre
@@ -1241,20 +1293,20 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                 return;
             }
             
-            if(!confirm(`¿Confirmar devolución del producto?\n\n📦 Producto: ${producto_nombre}\n🔢 Cantidad: ${cantidad} unidades\n💰 Monto aproximado: S/ ${(cantidad * parseFloat(document.getElementById('precio_unitario_devolucion').value.replace('S/ ', ''))).toFixed(2)}\n\nEsta acción creará una nota de crédito, actualizará el stock y registrará en inventario.`)) {
+            if(!confirm(`¿Confirmar devolución al proveedor?\n\n📦 Producto: ${producto_nombre}\n🔢 Cantidad: ${cantidad} unidades\n💰 Monto aproximado: S/ ${(cantidad * parseFloat(document.getElementById('precio_compra_unitario_devolucion').value.replace('S/ ', ''))).toFixed(2)}\n\n⚠️ ATENCIÓN: Esta acción DISMINUIRÁ el stock del producto y creará una nota de crédito.`)) {
                 return;
             }
             
             try {
                 const formData = new FormData();
-                formData.append('accion', 'crear_nota_credito');
-                formData.append('cod_detalleventa', cod_detalleventa);
+                formData.append('accion', 'crear_nota_credito_compra');
+                formData.append('cod_detallecompra', cod_detallecompra);
                 formData.append('cantidad', cantidad);
                 formData.append('motivo', motivo);
-                formData.append('cod_venta', cod_venta);
+                formData.append('cod_compra', cod_compra);
                 
                 console.log("Enviando petición...");
-                const response = await fetch('registrodevolucion.php', {
+                const response = await fetch('registrodevolucioncompra.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -1275,11 +1327,11 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                     alert(resultado.message);
                     
                     // Cerrar modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalDevolucion'));
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalDevolucionCompra'));
                     modal.hide();
                     
                     // Recargar detalles para actualizar la vista
-                    mostrarDetallesVenta(cod_venta);
+                    mostrarDetallesCompra(cod_compra);
                     
                 } else {
                     alert('❌ ' + resultado.message);
@@ -1287,7 +1339,7 @@ if(isset($_GET['buscar']) && !empty($_GET['buscar'])) {
                 
             } catch (error) {
                 console.error('Error en fetch:', error);
-                alert('❌ Error de conexión: ' + error.message);
+                alert('❌ Error de conexión: ' . error.message);
             }
         }
 
