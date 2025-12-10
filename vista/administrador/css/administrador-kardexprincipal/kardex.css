@@ -1,0 +1,242 @@
+table thead th {
+    font-size: 14px;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+table td, table th {
+    font-size: 14px;
+    padding: 0.6rem;
+}
+
+table tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.bg-success-light { 
+    background-color: #d4edda !important; 
+}
+
+.bg-danger-light { 
+    background-color: #f8d7da !important; 
+}
+.bg-primary-light { 
+    background-color: #cce7ff !important; 
+}
+
+.table th { 
+    vertical-align: middle; 
+}
+        
+.kardex-table { 
+    font-size: 0.8rem; 
+}
+
+.kardex-table th, .kardex-table td { 
+    padding: 0.3rem; text-align: center; 
+}
+    
+.entrada-row { 
+    background-color: #f8fff8; 
+}
+        
+.salida-row {
+    background-color: #fff8f8; 
+}
+        
+.nota-credito-venta-row { 
+    background-color: #f0fff0; border-left: 3px solid #28a745; 
+}
+        
+.nota-credito-compra-row { 
+    background-color: #fff0f0; border-left: 3px solid #dc3545; 
+}
+        
+.saldo-unitario { 
+    font-weight: bold; color: #007bff; 
+}
+       
+.error-stock { 
+    background-color: #ffe6e6; color: #d63031; 
+}
+       
+.lote-separado { 
+    padding: 2px 0; 
+}
+       
+.lote-item { 
+    border-bottom: 1px dashed #dee2e6; padding: 2px 0; 
+}
+        
+.lote-item:last-child { 
+    border-bottom: none; 
+}
+        
+.pagination-container { 
+    display: flex; justify-content: center; margin-top: 20px; 
+}
+       
+.kardex-pagination {
+    display: flex; justify-content: center; align-items: center; margin: 10px 0; 
+}
+        
+.kardex-pagination button { 
+    margin: 0 2px; 
+    padding: 2px 8px; font-size: 0.8rem; 
+}
+     
+.product-kardex { 
+    display: none; 
+}
+     
+.product-kardex.active { 
+    display: block; 
+}
+    
+.movimientos-info { 
+    font-size: 0.8rem; 
+    color: #6c757d; 
+}
+    
+.loading { 
+    opacity: 0.7; 
+    pointer-events: none; 
+}
+    
+.estadisticas-producto { 
+    display: none; 
+}
+    
+.estadisticas-global { 
+    display: block; 
+}
+    
+.export-buttons { 
+    margin-bottom: 15px; 
+}
+    
+.export-buttons .btn { 
+    margin-right: 5px; 
+}
+    
+.saldo-inicial-row { 
+    background-color: #e8f4fd; font-weight: bold; 
+}
+    
+.filtro-activo { 
+    background-color: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px; 
+}
+    
+ 
+.loading-spinner { 
+    display: none; 
+    text-align: center; 
+    padding: 20px; 
+}
+        
+.filtro-rapido { 
+    transition: all 0.3s ease; 
+}
+        
+.date-range-container { 
+    position: relative; 
+}
+        
+.date-range-display { 
+    cursor: pointer; 
+    border: 1px solid #ced4da; 
+    padding: 8px 12px; 
+    border-radius: 4px;
+    background-color: white;
+}
+
+
+.calendar-popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1050;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 15px;
+    min-width: 300px;
+    display: none;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+ 
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+ 
+.calendar-day {
+    padding: 5px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 4px;
+}
+ 
+.calendar-day:hover {
+    background-color: #f0f0f0;
+}
+
+.calendar-day.selected {
+    background-color: #007bff;
+    color: white;
+}
+
+.calendar-day.in-range {
+    background-color: #e7f1ff;
+}
+
+.calendar-day-header {
+    font-weight: bold;
+    padding: 5px;
+    text-align: center;
+    background-color: #f8f9fa;
+}
+        
+.range-display {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 5px;
+}
+
+.date-inputs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.date-inputs input {
+    flex: 1;
+}
+    
+.costo-ventas-container {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.costo-ventas-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #dc3545;
+}

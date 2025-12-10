@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Stock - MAD MARKET</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/vendedor-estilo.css">
+    <link rel="stylesheet" href="css/vendedor-boton/boton.css">
+    <link rel="stylesheet" href="css/vendedor-consultarstock/consultar.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <div class="grid">
+        <main class="principal">
+            <button class="boton-menu" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="barra-lateral" id="barra-lateral">
+                <div class="logo">
+                    <h4><i class="fas fa-store"></i> MAD MARKET</h4>
+                    <small id="userRole">Vendedor</small>
+                </div>
+
+                <div class="nav flex-column mt-3">
+                    <a href="dashboard.html" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="nuevaventa.php" class="nav-link"><ul><i class="fas fa-cash-register"></i>Nueva Venta</ul></a>
+                    <a href="registrodevolucion.php" class="nav-link"><ul><i class="fas fa-undo-alt"></i>Registrar Devolución</ul></a>
+                    <a href="boletafactura.html" class="nav-link"><ul><i class="fas fa-receipt"></i>Boletas/Facturas</ul></a>
+                    <a href="consultarstock.html" class="nav-link active"><ul><i class="fas fa-boxes"></i>Consultar Stock</ul></a>
+                </div>
+            </div>
+        </main>
+
+        <div class="secundario">
+            <div class="header">
+                <div class="usuario-info">
+                    <div class="usuario-avatar" id="usuarioAvatar"></div>
+                    <div>
+                        <div class="fw-bold fs-5" id="userName"></div>
+                        <small class="text-muted" id="userPosition">Vendedor</small>
+                    </div>
+                    <div class="dropdown-container">
+                        <div class="dropdown">
+                            <button class="dropdown-btn" id="dropdownBtn">
+                                <span class="arrow" id="arrow">▲</span>
+                            </button>
+                            <ul class="dropdown-list" id="dropdownList">
+                                <a href="../login.html" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stock-main">
+                <!-- Formulario único con todos los filtros -->
+                <div class="stock-controls">
+                    <form method="GET" action="" id="formFiltros">
+                        <div class="filtros-row">
+                            <!-- Campo de búsqueda -->
+                            <div class="filtro-group">
+                                <label for="buscarProducto">
+                                    <i class="fas fa-search"></i> Buscar:
+                                </label>
+                                <input type="text" name="buscar" id="buscarProducto" class="search-input" placeholder="Nombre, código o categoría...">
+                            </div>
+                            
+                            <!-- Filtro por categoría -->
+                            <div class="filtro-group">
+                                <label for="filtroCategoria">
+                                    <i class="fas fa-tags"></i> Categoría:
+                                </label>
+                                <select id="filtroCategoria" name="filtroCategoria">
+                                    <option value="">Todas las categorías</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Filtro por estado de stock -->
+                            <div class="filtro-group">
+                                <label for="filtroStock">
+                                    <i class="fas fa-filter"></i> Estado Stock:
+                                </label>
+                                <select id="filtroStock" name="filtroStock">
+                                    <option value="">Todos</option>
+                                    <option value="Bajo">Bajo</option>
+                                    <option value="Agotado">Agotado</option>
+                                    <option value="Normal">Normal</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Botones de acción -->
+                            <div class="btn-acciones">
+                                <button type="button" class="btn btn-outline-secondary flex-fill" id="btnLimpiarFiltros">
+                                    <i class="fas fa-times me-2"></i>Limpiar Filtros
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Estadísticas -->
+                <div class="estadisticas-stock">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="totalProductos"></span>
+                            <span class="stat-label">Total Productos</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card warning">
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="stockBajo"></span>
+                            <span class="stat-label">Stock Bajo (≤10 unidades)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card danger">
+                        <div class="stat-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="stockAgotado"></span>
+                            <span class="stat-label">Productos Agotados</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Productos -->
+                <div class="tabla-stock-container">
+                    <div class="tabla-header">
+                        <h3><i class="fas fa-list"></i> Inventario de Productos</h3>
+
+                        <div>
+                            <button class="btn btn-success btn-sm" id="exportarexcel">
+                                <i class="fas fa-file-excel me-1"></i>Exportar Excel
+                            </button>
+
+                            <button class="btn btn-danger btn-sm" id="exportarpdf">
+                                <i class="fas fa-file-pdf me-1"></i>Exportar Pdf
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="tabla-stock">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Precio Costo</th>
+                                    <th>Precio Venta</th>
+                                    <th>Margen</th>
+                                    <th>Unid. x Caja</th>
+                                    <th>Stock</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaProductos">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Alertas de Stock -->
+                <div class="list-group list-group-flush" id="alertasStock"></div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../../controlador/vendedor/consultarstock/js/scripts.js"></script>
+    <script src="js/consultarstock/scripts.js"></script>
+</body>
+</html>

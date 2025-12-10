@@ -1,0 +1,49 @@
+/* Archivo principal que importa todos los estilos */
+@import url("datos.css");
+@import url("acciones-rapidas.css");
+
+/* Estilos específicos para el dashboard */
+.grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 100vh;
+    background-color: #f5f7fa;
+}
+
+.principal {
+    background: #2c3e50;
+}
+
+.secundario {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 991.98px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .principal {
+        position: fixed;
+        z-index: 1000;
+        width: 280px;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    
+    .principal.mobile-open {
+        transform: translateX(0);
+    }
+    
+    .secundario {
+        margin-left: 0;
+    }
+}
+
+/* Ajustes para las nuevas tarjetas */
+.card-header .badge {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+}

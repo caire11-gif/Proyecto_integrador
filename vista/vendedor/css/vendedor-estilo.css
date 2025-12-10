@@ -1,0 +1,22 @@
+/*Interfaz*/
+@import url("vendedor-interfaz/interfaz.css");
+
+/*Dashboard*/
+@import url("vendedor-dashboard/dashboard.css");
+
+/*Nueva venta*/
+@import url("vendedor-nuevaventa/nuevaventa.css");
+
+@media (max-width: 991.98px) {
+    .secundario {
+        margin-left: 0;
+    }
+            
+    .barra-lateral {
+        transform: translateX(-100%);
+    }
+            
+    .barra-lateral.mobile-open {
+        transform: translateX(0);
+    }
+}

@@ -1,0 +1,386 @@
+.stylehistorial-documentos {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+}
+
+.filtros-historial {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.filtros-historial select,
+.filtros-historial input {
+    flex: 1;
+    min-width: 150px;
+}
+
+.documentos-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.documentos-table th,
+.documentos-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.documentos-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.btn-accion {
+    margin: 2px;
+}
+
+
+#modalDetalles .modal-header {
+    border-radius: 12px 12px 0 0;
+    border-bottom: 3px solid #2c5aa0;
+    background: linear-gradient(135deg, #2c5aa0, #3a7bd5);
+    padding: 20px 30px;
+}
+
+#modalDetalles .modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+}
+
+#modalDetalles .modal-footer {
+    border-radius: 0 0 12px 12px;
+    border-top: 2px solid #e9ecef;
+    padding: 20px 30px;
+}
+
+/* Estilos para documentos profesionales */
+.documento-empresa {
+    border: 2px solid #333;
+    padding: 25px;
+    background: white;
+    font-family: 'Arial', sans-serif;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.header-documento {
+    text-align: center;
+    border-bottom: 3px double #333;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.logo-empresa {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2c5aa0;
+    margin-bottom: 5px;
+}
+
+.ruc-empresa {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.tipo-documento {
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin: 10px 0;
+}
+
+.numero-documento {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.info-cliente {
+    background: #f8f9fa;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 20px;
+}
+
+.tabla-productos {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.tabla-productos th {
+    background: #2c5aa0;
+    color: white;
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #1e3d6d;
+}
+
+.tabla-productos td {
+    padding: 10px;
+    border: 1px solid #dee2e6;
+}
+
+.tabla-productos tfoot td {
+    background: #f8f9fa;
+    font-weight: bold;
+    border: 1px solid #dee2e6;
+}
+
+.total-documento {
+    background: #2c5aa0 !important;
+    color: white !important;
+    font-size: 16px;
+}
+
+.footer-documento {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 15px;
+    border-top: 2px dashed #ccc;
+    color: #666;
+    font-size: 12px;
+}
+
+/* Mejoras para PDF */
+.documento-empresa-pdf {
+    border: 2px solid #000;
+    padding: 20px;
+    background: white;
+    font-family: 'Arial', sans-serif;
+    max-width: 700px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.documento-empresa-pdf .header-documento {
+    text-align: center;
+    border-bottom: 3px double #000;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.documento-empresa-pdf .tabla-productos {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    border: 2px solid #000;
+}
+
+.documento-empresa-pdf .tabla-productos th {
+    background: #2c5aa0;
+    color: white;
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #000;
+    font-weight: bold;
+}
+
+.documento-empresa-pdf .tabla-productos td {
+    padding: 10px;
+    border: 1px solid #000;
+}
+
+.documento-empresa-pdf .tabla-productos tfoot td {
+    background: #f8f9fa;
+    font-weight: bold;
+    border: 1px solid #000;
+}
+
+/* ✅ REEMPLAZA los estilos de impresión con esto: */
+@media print {
+    body * {
+        visibility: hidden;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .documento-print,
+    .documento-print * {
+        visibility: visible;
+    }
+
+    .documento-print {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        min-height: 100vh !important;
+        background: white !important;
+        padding: 15mm !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    .documento-print .documento-empresa {
+        transform: none !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        border: 2px solid #000 !important;
+        padding: 20px !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .tabla-productos,
+    .tabla-productos th,
+    .tabla-productos td {
+        border: 1px solid #000 !important;
+        border-collapse: collapse !important;
+    }
+
+    .total-documento {
+        background: #2c5aa0 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .tabla-productos th {
+        background: #2c5aa0 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+
+.logo-empresa {
+    font-size: 28pt !important;
+}
+
+.tipo-documento {
+    font-size: 20pt !important;
+}
+
+
+/* Estilos adicionales para mejorar el PDF */
+.documento-empresa-pdf {
+    border: 2px solid #000 !important;
+    padding: 25px !important;
+    background: white !important;
+    font-family: 'Arial', sans-serif !important;
+    max-width: 700px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+}
+
+.documento-empresa-pdf .header-documento {
+    text-align: center !important;
+    border-bottom: 3px double #000 !important;
+    padding-bottom: 15px !important;
+    margin-bottom: 15px !important;
+}
+
+.documento-empresa-pdf .tabla-productos {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 15px 0 !important;
+    border: 2px solid #000 !important;
+    font-size: 10px !important;
+}
+
+.documento-empresa-pdf .tabla-productos th,
+.documento-empresa-pdf .tabla-productos td {
+    border: 1px solid #000 !important;
+    padding: 8px !important;
+}
+
+.documento-empresa-pdf .info-cliente {
+    background: #f8f9fa !important;
+    border: 1px solid #000 !important;
+    margin-bottom: 15px !important;
+}
+
+/* Asegurar que los colores se impriman */
+@media print {
+    .documento-empresa-pdf * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    @page {
+        margin: 15mm;
+        size: A4 portrait;
+    }
+}
+
+#modalContent .documento-empresa {
+    max-width: 100%;
+    margin: 0 auto;
+    border: 2px solid #333;
+    padding: 20px;
+    background: white;
+    width: 100%;
+    transform: scale(0.9);
+    /* Escalar para mejor visualización */
+    transform-origin: top center;
+}
+
+/* Mejorar la distribución en columnas */
+#modalContent .row {
+    margin-bottom: 12px;
+}
+
+#modalContent .info-cliente {
+    background: #f8f9fa;
+    padding: 12px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+/* MODAL CENTRADO Y RECTANGULAR HORIZONTAL */
+#modalDetalles .modal-dialog {
+    max-width: 95%;
+    width: 95%;
+    margin: 2vh auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 90vh;
+}
+
+#modalDetalles .modal-content {
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    height: 90vh;
+    /* Menos alto = más horizontal */
+    width: 60vw;
+    /* Más ancho = más horizontal */
+    max-width: 80vw;
+    /* Forzar máximo ancho */
+}
+
+#modalDetalles .modal-body {
+    padding: 25px;
+    max-height: calc(90vh - 130px);
+    overflow-y: auto;
+    background: white;
+}
+
+.documento-pantalla-completa {
+    width: 100%;
+    height: 100%;
+    background: white;
+    border: 5px solid #333;
+    padding: 30px;
+    box-sizing: border-box;
+}
+
+.modal-backdrop {
+    display: none !important;
+}

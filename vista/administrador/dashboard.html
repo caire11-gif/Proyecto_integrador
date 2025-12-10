@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mad Market - Sistema de Administrador</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/administrador-dashboard/datos.css">
+    <link rel="stylesheet" href="css/administrador-estilo.css">
+    <link rel="stylesheet" href="css/administrador-boton/boton.css">
+</head>
+<body>
+    <div class="grid">
+        <main class="principal">
+            <!--Botón menú-->
+            <button class="boton-menu" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+    
+            <!--Barra lateral-->
+            <div class="barra-lateral" id="barra-lateral">
+                <div class="logo">
+                    <h4><i class="fas fa-store"></i> MAD MARKET</h4>
+                    <small id="userRole">Administrador</small>
+                </div>
+
+                <!--Navegación-->
+                <div class="nav flex-column mt-3">
+                    <a href="dashboard.html" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="kardexprincipal.html" class="nav-link"><ul><i class="fas fa-boxes"></i>Kardex Principal</ul></a>
+                    <a href="proveedores.html" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
+                    <a href="controlpersonal.html" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Control de Personal</ul></a>
+                    <a href="registroventas.html" class="nav-link"><ul><i class="fas fa-arrow-right"></i>Registro de Ventas</ul></a>
+                    
+                </div>
+            </div>
+        </main>
+
+        <div class="secundario">
+            <div class="header">
+                <div class="usuario-info">
+                    <!--Datos del usuario-->
+                    <div class="usuario-avatar" id="usuarioAvatar"></div>
+                    <div>
+                        <div class="fw-bold fs-5" id="userName"></div>
+                        <small class="text-muted" id="userPosition">Administrador</small>
+                    </div>
+
+                    <!--Botón de cerrar sesión-->
+                    <div class="dropdown-container">
+                        <div class="dropdown">
+                            <button class="dropdown-btn" id="dropdownBtn">
+                                <span class="arrow" id="arrow">▲</span>
+                            </button>
+                            <ul class="dropdown-list" id="dropdownList">
+                                <a href="../login.html" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0"><i class="fas fa-tachometer-alt me-2"></i>Dashboard Administrativo</h1>
+            </div>
+
+            <div class="row mb-4">
+                <!--Cantidad de entradas de este mes-->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted">Entradas de este mes</div>
+                                    <div class='h4 mb-0 text-primary' id="entradasMes"></div>                               
+                                </div>
+                                <div class="bg-primary text-white rounded p-3 text-center">
+                                    <i class="fas fa-exchange-alt me-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+                <!--Cantidad de salidas de este mes-->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted">Salidas de este mes</div>
+                                    <div class="h4 mb-0 text-success" id="salidasMes"></div>
+                                </div>
+                                <div class="bg-success text-white rounded p-3">
+                                    <i class="fas fa-exchange-alt me-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+                <!--Cantidad de devoluciones de este mes-->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted">Devoluciones de este mes</div>
+                                    <div class="h4 mb-0 text-info" id="devolucionesMes"></div>
+                                </div>
+                                <div class="bg-info text-white rounded p-3">
+                                    <i class="fas fa-exchange-alt me-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!--Últimos registros-->
+                <div class="row">
+                    <!--Últimas entradas-->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Últimas Entradas Kardex</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="ultimos list-group list-group-flush" id="ultimas-entradas">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Usuarios activos-->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Personal Activo</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="lista-personal list-group list-group-flush" id="personal-activo">
+                                </div>
+                            </div>
+                        </div>                    
+                    </div>
+
+                    <!--Últimas salidas-->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Últimas Salidas Kardex</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="ultimos list-group list-group-flush" id="ultimas-salidas">
+                                </div>
+                            </div>
+                        </div>                    
+                    </div>
+
+                    <!--Últimas devoluciones-->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Últimas Devoluciones Kardex</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="ultimos list-group list-group-flush" id="ultimas-devoluciones">
+                                </div>
+                            </div>
+                        </div>                    
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="../../controlador/administrador/usuario.js"></script>
+    <script src="../../controlador/administrador/dropdown.js"></script>
+    <script src="../../controlador/administrador/barralateral.js"></script>
+    <script src="../../controlador/administrador/dashboard/js/scripts.js"></script>
+</body>
+</html>

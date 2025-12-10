@@ -1,0 +1,313 @@
+/*CARDS*/
+    document.addEventListener('DOMContentLoaded', async function () {
+        fetch('../../modelo/almacen/almacenproveedores/card.php')
+            .then(response => response.json())
+            .then(data => {
+                const contenedor = document.getElementById('cardProductos');
+                contenedor.innerHTML = '';
+
+                // Agrupar por proveedor y categoría
+                const agrupado = {};
+
+                data.forEach(item => {
+                    const proveedor = item.proveedor;
+                    const categoria = item.categoria;
+                    const producto = item.producto;
+
+                    if (!agrupado[proveedor]) agrupado[proveedor] = {};
+                    if (!agrupado[proveedor][categoria]) agrupado[proveedor][categoria] = [];
+
+                    agrupado[proveedor][categoria].push(producto);
+                });
+
+                // Crear tarjetas visuales
+                for (const proveedor in agrupado) {
+                    const cardProveedor = document.createElement('div');
+                    cardProveedor.classList.add('card-proveedor');
+
+                    const nombreProveedor = document.createElement('h3');
+                    nombreProveedor.textContent = proveedor;
+                    cardProveedor.appendChild(nombreProveedor);
+
+                    for (const categoria in agrupado[proveedor]) {
+                        const bloqueCategoria = document.createElement('div');
+                        bloqueCategoria.classList.add('categoria-bloque');
+
+                        const tituloCategoria = document.createElement('h5');
+                        tituloCategoria.textContent = categoria;
+                        bloqueCategoria.appendChild(tituloCategoria);
+
+                        // Contenedor horizontal de productos
+                        const contenedorProductos = document.createElement('div');
+                        contenedorProductos.classList.add('productos-grid');
+
+                        agrupado[proveedor][categoria].forEach(nombreProd => {
+                            const prodCard = document.createElement('div');
+                            prodCard.classList.add('producto-card');
+                            prodCard.textContent = nombreProd;
+                            contenedorProductos.appendChild(prodCard);
+                        });
+
+                        bloqueCategoria.appendChild(contenedorProductos);
+                        cardProveedor.appendChild(bloqueCategoria);
+                    }
+
+                    contenedor.appendChild(cardProveedor);
+                }
+            })
+            .catch(error => console.error('Error al cargar los productos:', error));
+    });
+
+//#######################################################################################################################################################
+
+/*EXPORTAR*/
+    /*Exportar excel*/
+    document.getElementById('exportarexcel').addEventListener('click', function(btnElement){
+        const originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Procesando...';
+        btnElement.disabled = true;
+
+        fetch(`../../modelo/almacen/almacenproveedores/exportar.php`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
+            .then(proveedorCompleto => {
+                const workbook = XLSX.utils.book_new();
+
+                const data = [];
+
+                const headers = ['Código', 'Proveedor', 'Ruc', 'Teléfono', 'Dirección'];
+
+                data.push(headers);
+
+                proveedorCompleto.forEach(prove => {
+                    const rowData = [
+                        prove.cod_proveedor,
+                        prove.razon_social,
+                        prove.ruc,
+                        prove.telefono,
+                        prove.direccion
+                    ];
+                    data.push(rowData);
+                });
+
+                const worksheet = XLSX.utils.aoa_to_sheet(data);
+
+                worksheet['!cols'] = [
+                    { wch: 15 },
+                    { wch: 25 },
+                    { wch: 15 },
+                    { wch: 15 },
+                    { wch: 40 }
+                ];
+
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Proveedores');
+
+                XLSX.writeFile(workbook, `Proveedores_Completo.xlsx`);
+
+                btnElement.innerHTML = originalText;
+                btnElement.disabled = false;
+                Swal.fire({
+                    icon: "success",
+                    title: "Descarga Completada",
+                    width: "350px",
+                });
+            })
+            .catch(error => {
+                console.error('Error al exportar Excel:', error);
+                console.log('Error al exportar el archivo Excel. Por favor, intente nuevamente.');
+                
+                // Restaurar botón en caso de error
+                btnElement.innerHTML = originalText;
+                btnElement.disabled = false;
+            }); 
+    });
+
+    /*Exportar pdf*/
+    document.getElementById('exportarpdf').addEventListener('click', function(btnElement){
+        const originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Procesando...';
+        btnElement.disabled = true;
+        
+        fetch(`../../modelo/almacen/almacenproveedores/exportar.php`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
+            .then(proveedorCompleto => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('l', 'mm', 'a4');
+                
+                // Título del documento
+                doc.setFontSize(16);
+                doc.text(`Proveedores Completos`, 14, 15);
+                doc.setFontSize(10);
+                doc.text(`Fecha de exportación: ${new Date().toLocaleDateString()}`, 14, 22);
+                doc.text(`Total de proveedores: ${proveedorCompleto.length}`, 14, 28);
+                
+                const headers = [
+                    ['Código', 'Proveedor', 'Ruc', 'Teléfono', 'Dirección']
+                ];
+                
+                const body = proveedorCompleto.map(prove => [
+                    prove.cod_proveedor,
+                    prove.razon_social,
+                    prove.ruc,
+                    prove.telefono,
+                    prove.direccion
+                ]);
+                
+                // Crear tabla PDF
+                doc.autoTable({
+                    head: headers,
+                    body: body,
+                    startY: 35,
+                    styles: { 
+                        fontSize: 6, 
+                        cellPadding: 1,
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1
+                    },
+                    headStyles: { 
+                        fillColor: [52, 58, 64],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 6
+                    },
+                    alternateRowStyles: { 
+                        fillColor: [240, 240, 240]
+                    },
+                    margin: { top: 35 },
+                    tableWidth: 'wrap'
+                });
+                
+                // Descargar PDF
+                doc.save(`Proveedores_Completo.pdf`);
+                
+                // Restaurar botón
+                btnElement.innerHTML = originalText;
+                btnElement.disabled = false;
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Descarga Completada",
+                    width: "350px",
+                });
+            })
+            .catch(error => {
+                console.error('Error al exportar PDF:', error);
+                alert('Error al exportar el archivo PDF. Por favor, intente nuevamente.');
+                
+                // Restaurar botón en caso de error
+                btnElement.innerHTML = originalText;
+                btnElement.disabled = false;
+            });
+    });
+
+//############################################################################################################################################################
+
+/*FILTROS*/
+    const filtroProveedores=document.getElementById('campo');
+    const tablaProveedores=document.getElementById('content')
+    const filasProveedores=tablaProveedores.getElementsByTagName('tr');
+
+    filtroProveedores.addEventListener('input', function(){
+        const filtro=this.value.toLowerCase();
+
+        for (let i = 0; i < filasProveedores.length; i++) {
+            const fila = filasProveedores[i];
+            const celdas = fila.getElementsByTagName('td');
+            let mostrarFila = false;
+
+            if (celdas.length >= 2) {
+                const codigo = celdas[0].textContent.toLowerCase();
+                const nombre = celdas[1].textContent.toLowerCase();
+                const ruc = celdas[2].textContent.toLowerCase();        
+
+                if (codigo.includes(filtro) || nombre.includes(filtro) || ruc.includes(filtro)) {
+                    mostrarFila = true;
+                }
+            }
+
+            fila.style.display = mostrarFila ? '' : 'none';
+        }
+    });
+
+//##########################################################################################################################################################
+
+/*SELECCIÓN PARA LA TABLA*/
+    document.addEventListener("DOMContentLoaded", getData);
+
+    // Función para obtener datos con AJAX
+    function getData() {
+        let input = document.getElementById("campo").value
+        let num_registros = document.getElementById("num_registros").value
+        let content = document.getElementById("content")
+        let pagina = document.getElementById("pagina").value || 1;
+        let orderCol = document.getElementById("orderCol").value
+        let orderType = document.getElementById("orderType").value
+
+        let formaData = new FormData()
+        formaData.append('campo', input)
+        formaData.append('registros', num_registros)
+        formaData.append('pagina', pagina)
+        formaData.append('orderCol', orderCol)
+        formaData.append('orderType', orderType)
+
+        fetch("../../modelo/almacen/almacenproveedores/selecprove.php", {
+                method: "POST",
+                body: formaData
+            })
+            .then(response => response.json())
+            .then(data => {
+                content.innerHTML = data.data
+                document.getElementById("lbl-total").innerHTML = `Mostrando ${data.totalFiltro} de ${data.totalRegistros} registros`;
+                document.getElementById("nav-paginacion").innerHTML = data.paginacion
+
+                // Si la página actual no tiene resultados, ajustar la paginación para mostrar la primera página
+                if (data.data.includes('Sin resultados') && parseInt(pagina) !== 1) {
+                    nextPage(1); // Ir a la primera página
+                }
+            })
+            .catch(err => console.log(err))
+    }
+
+    // Función para cambiar de página
+    function nextPage(pagina) {
+        document.getElementById('pagina').value = pagina
+        getData()
+    }
+
+    // Función para ordenar columnas
+    function ordenar(e) {
+        let elemento = e.target;
+        let orderType = elemento.classList.contains("asc") ? "desc" : "asc";
+
+        document.getElementById('orderCol').value = elemento.cellIndex;
+        document.getElementById("orderType").value = orderType;
+        elemento.classList.toggle("asc");
+        elemento.classList.toggle("desc");
+
+        getData()
+    }
+
+    // Función para cambiar de página
+    function resetPagina() {
+        document.getElementById('pagina').value = 1
+        getData()
+    }
+
+    // Event listeners para los eventos de cambio en el campo de entrada y el select
+    document.getElementById("campo").addEventListener("keyup", resetPagina);
+    document.getElementById("num_registros").addEventListener("change", getData);
+
+    // Event listener para ordenar las columnas
+    let columns = document.querySelectorAll(".sort");
+    columns.forEach(column => {
+        column.addEventListener("click", ordenar);
+    });

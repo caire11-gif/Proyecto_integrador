@@ -1,0 +1,22 @@
+/*Interfaz*/
+@import url("almacen-interfaz/interfaz.css");
+
+/*Dashboard*/
+@import url("almacen-dashboard/datos.css");
+
+/*Gestión de productos*/
+/*@import url("almacen-gestionproductos/productos.css");*/
+
+@media (max-width: 991.98px) {
+    .secundario {
+        margin-left: 0;
+    }
+            
+    .barra-lateral {
+        transform: translateX(-100%);
+    }
+            
+    .barra-lateral.mobile-open {
+        transform: translateX(0);
+    }
+}

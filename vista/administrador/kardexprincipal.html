@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mad Market - Sistema de Administrador</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/administrador-kardexprincipal/kardex.css">
+    <link rel="stylesheet" href="css/administrador-estilo.css">
+    <link rel="stylesheet" href="css/administrador-boton/boton.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <div class="grid">
+        <main class="principal">
+            <button class="boton-menu" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="barra-lateral" id="barra-lateral">
+                <div class="logo">
+                    <h4><i class="fas fa-store"></i> MAD MARKET</h4>
+                    <small id="userRole">Administrador</small>
+                </div>
+
+                <div class="nav flex-column mt-3">
+                    <a href="dashboard.html" class="nav-link"><ul><i class="fas fa-tachometer-alt"></i>Dashboard</ul></a>
+                    <a href="kardexprincipal.html" class="nav-link active"><ul><i class="fas fa-boxes"></i>Kardex Principal</ul></a>
+                    <a href="proveedores.html" class="nav-link"><ul><i class="fas fa-truck"></i>Proveedores</ul></a>
+                    <a href="controlpersonal.html" class="nav-link"><ul><i class="fas fa-truck-loading"></i>Control de Personal</ul></a>
+                    <a href="registroventas.html" class="nav-link"><ul><i class="fas fa-arrow-right"></i>Registro de Ventas</ul></a>
+                </div>
+            </div>
+        </main>
+
+        <div class="secundario">
+            <div class="header">
+                <div class="usuario-info">
+                    <div class="usuario-avatar" id="usuarioAvatar"></div>
+                    <div>
+                        <div class="fw-bold fs-5" id="userName"></div>
+                        <small class="text-muted" id="userPosition">Administrador</small>
+                    </div>
+                    <div class="dropdown-container">
+                        <div class="dropdown">
+                            <button class="dropdown-btn" id="dropdownBtn">
+                                <span class="arrow" id="arrow">▲</span>
+                            </button>
+                            <ul class="dropdown-list" id="dropdownList">
+                                <a href="../login.html" class="nav-link"><ul><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</ul></a>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br>
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0"><i class="fas fa-chart-line me-2"></i>Kardex Principal <small class="text-muted">(Método PEPS)</small></h1>
+                <div>
+                    <button class="btn btn-outline-secondary" id="btnResetFilters">
+                        <i class="fas fa-redo me-2"></i>Limpiar Filtros
+                    </button>
+                </div>
+            </div>
+
+            <!-- FILTROS CON RANGO DE FECHAS -->
+            <div class="card border-0 shadow-sm mb-4 filtro-rapido">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Producto</label>
+                            <select class="form-select" id="productFilter">
+                                <option value="">Todos los productos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha Inicio</label>
+                            <div class="date-range-container" id="fechaInicio">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha Fin</label>
+                            <div class="date-range-container" id="fechaFin">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary btn-sm" onclick="setRangoFecha('hoy')">
+                                    <i class="fas fa-calendar-day"></i> Hoy
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="setRangoFecha('ayer')">
+                                    <i class="fas fa-calendar-alt"></i> Ayer
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="setRangoFecha('semana')">
+                                    <i class="fas fa-calendar-week"></i> Esta semana
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="setRangoFecha('mes')">
+                                    <i class="fas fa-calendar"></i> Este mes
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="setRangoFecha('anio')">
+                                    <i class="fas fa-calendar-check"></i> Este año
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ESTADÍSTICAS GLOBALES -->
+            <div class="row mb-4" id="estadisticasContainer">
+                <div class="col-md-3">
+                    <div class="card border-0 bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h4 class="mb-1" id="totalMovimientos">0</h4>
+                            <small>Total Movimientos</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-success text-white">
+                        <div class="card-body text-center">
+                            <h4 class="mb-1" id="valorEntradas">S/ 0.00</h4>
+                            <small>Valor Entradas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-danger text-white">
+                        <div class="card-body text-center">
+                            <h4 class="mb-1" id="valorSalidas">S/ 0.00</h4>
+                            <small>Valor Salidas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-info text-white">
+                        <div class="card-body text-center">
+                            <h4 class="mb-1" id="stockValorizado">S/ 0.00</h4>
+                            <small>Stock Valorizado</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LOADING SPINNER -->
+            <div class="loading-spinner" id="loadingSpinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando kardex...</p>
+            </div>
+
+            <!-- CONTENEDOR DEL KARDEX (se llena via AJAX) -->
+            <div id="kardexContainer"></div>
+
+            <!-- PAGINACIÓN (se actualiza via AJAX) -->
+            <div id="paginationContainer"></div>
+        </div>
+    </div>
+    <script src="../../controlador/administrador/usuario.js"></script>
+    <script src="../../controlador/administrador/dropdown.js"></script>
+    <script src="../../controlador/administrador/barralateral.js"></script>
+    <script src="../../controlador/administrador/kardexprincipal/scripts.js"></script>
+</body>
+</html>

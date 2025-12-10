@@ -1,0 +1,82 @@
+.prod-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+  justify-content: center;
+}
+
+/* Tarjeta principal de cada proveedor */
+.card-proveedor {
+  background-color: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  width: 280px;
+  transition: transform 0.2s ease;
+}
+
+.card-proveedor:hover {
+  transform: translateY(-5px);
+}
+
+.card-proveedor h3 {
+  text-align: center;
+  margin-bottom: 10px;
+  color: #111827;
+}
+
+/* Bloque de categoría dentro del proveedor */
+.categoria-bloque {
+  margin-top: 10px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 10px;
+}
+
+.categoria-bloque h5 {
+  color: #1e40af;
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* Contenedor horizontal de productos */
+.productos-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Tarjeta de cada producto */
+.producto-card {
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  color: #374151;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.producto-card:hover {
+  background: #e0f2fe;
+  transform: translateY(-3px);
+}
+
+.lista-productos {
+  max-height: 250px;
+  /* 👈 Ajusta esta altura según necesites */
+  overflow-y: auto;
+  /* 👈 Activa el scroll vertical */
+  padding-right: 5px;
+}
+
+.lista-productos::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lista-productos::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
